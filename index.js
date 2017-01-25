@@ -4,6 +4,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const request = require('request')
 const app = express()
+const emoji = require('node-emoji')
 
 app.set('port', (process.env.PORT || 5000))
 
@@ -38,9 +39,11 @@ app.post('/webhook/', function (req, res) {
         let sender = event.sender.id
         if (event.message && event.message.text) {
             let text = event.message.text
-            // BL
-            
-            sendTextMessage(sender, "אמרת: " + text.substring(0, 200))
+            if (text == "אוינק") {
+                sendTextMessage(sender, emoji.emojify(':pig_nose: :pig_nose: :pig_nose:')  )
+            } else {
+                sendTextMessage(sender, "אמרת: " + text.substring(0, 200))
+            }
         }
     }
     res.sendStatus(200)
