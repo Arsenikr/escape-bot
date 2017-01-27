@@ -58,10 +58,10 @@ app.post('/webhook', function (req, res) {
     } else {
 
     	if (entry.message.text == "אוינק") {
-            FB.newMessage(sender, emoji.emojify(':pig_nose: :pig_nose: :pig_nose:')  )
+            FB.newMessage(entry.sender.id, emoji.emojify(':pig_nose: :pig_nose: :pig_nose:')  )
       } else {
       Bot.read(entry.sender.id, entry.message.text, function (sender, reply) {
-        FB.newMessage(sender, "אני ממליץ על " + reply)
+        FB.newMessage(entry.sender.id, "אני ממליץ על " + reply)
       })
       }
     }
