@@ -10,7 +10,7 @@ var mongoose = require('mongoose');
 
 var ESCAPE_ROOMS_COLLECTION = "escape_rooms";
 
-mongoose.connect(process.env.PROD_MONGODB || 'mongodb://127.0.0.1:27017/arseny_db', function (error) {
+mongoose.connect(process.env.PROD_MONGODB || 'mongodb://127.0.0.1:27017/escape_bot', function (error) {
     if (error) {
         console.log(error);
     }
@@ -115,16 +115,16 @@ function findInDb(location,callback) {
         } else {
         	if(docs.length > 0){
         		var i = Math.floor(Math.random() * (docs.length -1)) 
-        	return callback(docs[i].  room_name)
+        	return callback(docs[i].room_name)
         	} else return callback( "חדרים אבל לא מכיר את " + location)
         }
     })
 }
 
 
-app.get('/test/', function (req, res) {
-	var location = req.query.location
-	findInDb(location, function(response) {
+app.post('/test/', function (req, res) {
+    var message = req.body.message
+	findInDb(message, function(response) {
 		res.send("אני ממליץ על: " + response  )
     })
 })

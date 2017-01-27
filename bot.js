@@ -1,8 +1,10 @@
 'use strict'
 
 var Config = require('./config')
-var wit = require('./services/wit').getWit()
 var emoji = require('node-emoji')
+var Wit = require('node-wit').Wit;
+var DB = require('./connectors/mongoose')
+var FB = require('./connectors/facebook')
 
 
 
@@ -34,6 +36,63 @@ var findOrCreateSession = function (fbid) {
 
   return sessionId
 }
+
+var firstEntityValue = function (entities, entity) {
+    var val = entities && entities[entity] &&
+        Array.isArray(entities[entity]) &&
+        entities[entity].length > 0 &&
+        entities[entity][0].value
+
+    if (!val) {
+        return null
+    }
+    return typeof val === 'object' ? val.value : val
+}
+
+
+var actions = {
+    send(request, response) {
+        const {sessionId, context, entities} = request;
+        const {text, quickreplies} = response;
+        return new Promise(function(resolve, reject) {
+            const recipientId = sessions[sessionId].fbid;
+
+            console.log('WIT WANTS TO TALK TO:', recipientId)
+            console.log('WIT HAS SOMETHING TO SAY:', text)
+            console.log('WIT HAS A CONTEXT:', sessions[sessionId].context)
+
+            FB.newMessage(recipientId, text)
+
+
+            return resolve();
+        });
+    },
+
+
+    findEscapeRoom({context, entities}) {
+        return new Promise(function(resolve, reject) {
+            var location = firstEntityValue(entities, 'location');
+
+            if (location) {
+                console.log("wit received: " + location)
+
+                DB.findRoomInDb(location, function(response) {
+                        context.room_name = response || 'אין לי מושג'
+                    return resolve(context);
+
+                })
+            }
+        });
+    },
+};
+
+const WIT_TOKEN = Config.WIT_TOKEN;
+
+const wit = new Wit({
+    accessToken: WIT_TOKEN,
+    actions
+});
+
 
 var read = function (sender, message, reply) {
 	if (message === 'hello') {

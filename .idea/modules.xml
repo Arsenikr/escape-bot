@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/escape-bot-backend.iml" filepath="$PROJECT_DIR$/escape-bot-backend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/escape-bot.iml" filepath="$PROJECT_DIR$/escape-bot.iml" />
     </modules>
   </component>
 </project>

@@ -22,30 +22,6 @@ var EscapeRoomsSchema = new Schema({
 // Mongoose Model definition
 var EscapeRoom = mongoose.model('escape_rooms', EscapeRoomsSchema);
 
-// function findRoomInDb(location) {
-//     console.log("mongoose received: " + location)
-//     return new Promise(function (resolve, reject) {
-//         try {
-//                     // return resolve("boobo")
-//
-//             EscapeRoom.find({"location": /location/i}, {'room_name': true}).then(function (docs) {
-//                 console.log(docs.length)
-//                 // if (docs.length > 0) {
-//                 //     var i = Math.floor(Math.random() * (docs.length - 1))
-//                 //     console.log("found " + Json.stringify(docs[0]))
-//                     return resolve(docs[0].room_name);
-//                 // } else {
-//                 //     console.log("haven't found shit")
-//                 //     return resolve("boobo");
-//                 // }
-//
-//             });
-//         } catch (err) {
-//             console.log(err)
-//             return Promise.reject(err);
-//         }
-//     });
-// }
 
 function findRoomInDb(location,callback) {
     location_cleanup(location, function(cleaned_location) {
