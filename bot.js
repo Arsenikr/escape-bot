@@ -1,10 +1,10 @@
 'use strict'
 
-var Config = require('./config')
-var emoji = require('node-emoji')
+var Config = require('./config');
+var emoji = require('node-emoji');
 var Wit = require('node-wit').Wit;
-var DB = require('./connectors/mongoose')
-var FB = require('./connectors/facebook')
+var DB = require('./connectors/mongoose');
+var FB = require('./connectors/facebook');
 
 
 
@@ -38,6 +38,7 @@ var findOrCreateSession = function (fbid) {
 }
 
 var firstEntityValue = function (entities, entity) {
+    console.log(entities)
     var val = entities && entities[entity] &&
         Array.isArray(entities[entity]) &&
         entities[entity].length > 0 &&
@@ -68,7 +69,7 @@ var actions = {
     findEscapeRoom({context, entities}) {
         return new Promise(function(resolve, reject) {
             var location = firstEntityValue(entities, 'location');
-            var num_of_people = firstEntityValue(entities,'num_of_people')
+            var num_of_people = firstEntityValue(entities,'math_expression')
             if (location) {
                 console.log("wit received: " + location)
                 console.log("wit received: " + num_of_people)
