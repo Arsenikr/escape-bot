@@ -71,17 +71,17 @@ var actions = {
             var location = firstEntityValue(entities, 'location');
             var num_of_people = firstEntityValue(entities,'math_expression')
             if (location) {
-                console.log("wit received: " + location)
-                console.log("wit received: " + num_of_people)
+                console.log("wit received: " + location);
+                console.log("wit received: " + num_of_people);
 
                 DB.findRoomInDb(location,num_of_people, function(response) {
-                        context.room_name = response || 'אין לי מושג'
+                        context.room_name = response;
                     return resolve(context);
 
                 })
             }
         });
-    },
+    }
 };
 
 const WIT_TOKEN = Config.WIT_TOKEN;
