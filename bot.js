@@ -75,7 +75,7 @@ var actions = {
                 console.log("wit received: " + num_of_people);
 
                 DB.findRoomInDb(location,num_of_people, function(response) {
-                        context.room_name = response;
+                        context.room_name = response || 'חדרים אבל אין לי מושג מה זה ' + location;
                     return resolve(context);
 
                 })
