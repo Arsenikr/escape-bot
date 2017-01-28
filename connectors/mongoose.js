@@ -23,10 +23,10 @@ var EscapeRoomsSchema = new Schema({
 var EscapeRoom = mongoose.model('escape_rooms', EscapeRoomsSchema);
 
 
-function findRoomInDb(sender,location,num_of_people,callback) {
+function findRoomInDb(location,num_of_people,callback) {
     location_cleanup(location, function(cleaned_location) {
 
-       nop_cleanup(sender,num_of_people, function (cleaned_nop) {
+       nop_cleanup(num_of_people, function (cleaned_nop) {
 
         console.log(cleaned_nop);
 
