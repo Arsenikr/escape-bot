@@ -7,6 +7,7 @@ const app = express()
 var Config = require('./config')
 var FB = require('./connectors/facebook')
 var Bot = require('./bot')
+const emoji = require('node-emoji')
 
 
 
