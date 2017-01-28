@@ -50,10 +50,10 @@ function findRoomInDb(location,num_of_people,callback) {
 function findRoomByName(room_name,callback) {
     console.log("trying to find " + room_name);
 
-    EscapeRoom.find({"room_name": {'$regex': room_name}},{'room_name': true},function(err, docs) {
+    EscapeRoom.find({"room_name": {'$regex': room_name}},{'room_name': true,'location': true},function(err, docs) {
             if(docs.length > 0){
                 console.log("found " + docs[0].room_name);
-                return callback(docs[0].room_name)
+                return callback(docs[0].room_name + " נמצא ב" + docs[0].location)
             } else return callback(undefined)
 
     })
