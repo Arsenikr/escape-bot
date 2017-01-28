@@ -58,23 +58,56 @@ app.post('/webhook', function (req, res) {
       FB.newMessage(entry.sender.id, "זה מעניין!")
     } else {
 
-    	if (entry.message.text == "אוינק") {
-            FB.newMessage(entry.sender.id, emoji.emojify(':pig_nose: :pig_nose: :pig_nose:')  )
-      } else {
-      Bot.read(entry.sender.id, entry.message.text, function (sender, reply) {
-        FB.newMessage(entry.sender.id, "אני ממליץ על " + reply)
-      })
-      }
+        Bot.easterEggs(entry.message.text, function (reply) {
+            if(reply){
+                FB.newMessage(entry.sender.id,reply)
+            } else {
+                Bot.findRoomByName(entry.message.text, function ( reply) {
+                    if(reply){
+                        FB.newMessage(entry.sender.id,reply)
+                    } else {
+                        Bot.read(entry.sender.id, entry.message.text, function (sender, reply) {
+                           if(reply) {
+                               FB.newMessage(entry.sender.id, "אני ממליץ על " + reply)
+                           } else {
+                               handleNotUnderstand(entry.message.text)
+                           }
+                        })
+                    }
+                })
+
+            }
+
+        });
     }
   }
 
   res.sendStatus(200)
-})
+});
+
+function handleNotUnderstand(message){
+    FB.newMessage(entry.sender.id, "תסביר את עצמך קצת יותר טוב, לא הבנתי מה זה " + message)
+}
 
 app.post('/test/', function (req, res) {
-	var message = req.body.message
-    console.log(message)
-	Bot.read("moshe", message, function (sender, reply) {
-		res.send("אני ממליץ על: " + response  )
-      })
-})
+	var message = req.body.message;
+    console.log(message);
+
+    Bot.easterEggs(message, function (reply) {
+        if(reply){
+            res.send(reply)
+        } else {
+            Bot.findRoomByName(message, function ( reply) {
+                if(reply){
+                    res.send(reply)
+                } else {
+                    Bot.read("moshe", message, function (sender, reply) {
+                        res.send("אני ממליץ על: " + reply  )
+                    })
+                }
+            })
+
+        }
+
+    });
+});

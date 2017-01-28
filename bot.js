@@ -57,10 +57,6 @@ var actions = {
         return new Promise(function(resolve, reject) {
             const recipientId = sessions[sessionId].fbid;
 
-            console.log('WIT WANTS TO TALK TO:', recipientId)
-            console.log('WIT HAS SOMETHING TO SAY:', text)
-            console.log('WIT HAS A CONTEXT:', sessions[sessionId].context)
-
             FB.newMessage(recipientId, text)
 
 
@@ -72,11 +68,12 @@ var actions = {
     findEscapeRoom({context, entities}) {
         return new Promise(function(resolve, reject) {
             var location = firstEntityValue(entities, 'location');
-
+            var num_of_people = firstEntityValue(entities,'num_of_people')
             if (location) {
                 console.log("wit received: " + location)
+                console.log("wit received: " + num_of_people)
 
-                DB.findRoomInDb(location, function(response) {
+                DB.findRoomInDb(location,num_of_people, function(response) {
                         context.room_name = response || 'אין לי מושג'
                     return resolve(context);
 
@@ -94,12 +91,7 @@ const wit = new Wit({
 });
 
 
-var read = function (sender, message, reply) {
-	if (message === 'hello') {
-		// Let's reply back hello
-		message = 'Hello yourself! I am a chat bot. You can say "show me pics of corgis"'
-		reply(sender, message)
-	} else {
+var read = function (sender, message) {
 		// Let's find the user
 		var sessionId = findOrCreateSession(sender)
 		// Let's forward the message to the Wit.ai bot engine
@@ -113,26 +105,32 @@ var read = function (sender, message, reply) {
               // Now it's waiting for further messages to proceed.
               console.log('Waiting for next user messages');
 
-              // Based on the session state, you might want to reset the session.
-              // This depends heavily on the business logic of your bot.
-              // Example:
-              // if (context['done']) {
-              //   delete sessions[sessionId];
-              // }
-
               // Updating the user's current session state
               sessions[sessionId].context = context;
             })
             .catch((err) => {
               console.error('Oops! Got an error from Wit: ', err.stack || err);
             })
-	}
 }
 
+function easterEggs(message,callback) {
+    if (message == "אוינק") {
+        return callback(emoji.emojify(':pig_nose: :pig_nose: :pig_nose:'))
+    } else {
+        return callback(undefined)
+    }
+}
 
+function findRoomByName(message,callback) {
+    DB.findRoomByName(message, function (response) {
+        return callback(response)
+    });
+}
 
 
 module.exports = {
 	findOrCreateSession: findOrCreateSession,
 	read: read,
-}
+    easterEggs: easterEggs,
+    findRoomByName: findRoomByName
+};
