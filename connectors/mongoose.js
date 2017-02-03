@@ -2,6 +2,7 @@
 
 var Config = require('../config');
 var mongoose = require('mongoose');
+
 mongoose.Promise = global.Promise;
 
 mongoose.connect(Config.MONGODB_URL, function (error) {
@@ -16,12 +17,27 @@ var EscapeRoomsSchema = new Schema({
     company_name: String,
     location: String,
     min_players: Number,
-    max_players: Number
+    max_players: Number,
+    website: String,
+    phone: String,
+    phone_2: String,
+    address: String
 });
 
 // Mongoose Model definition
-var EscapeRoom = mongoose.model('escape_rooms', EscapeRoomsSchema);
+var EscapeRoom = mongoose.model('escape_rooms', EscapeRoomsSchema,'escape_rooms_new');
 
+
+function chooseNRooms(docs) {
+    var indicesArr = getRandomRoomIndices(Config.NUM_OF_ROOMS_TO_RETURN, docs.length);
+    var ans = [];
+    //TODO facebook list limit is 10, implement pagination
+    for (var i = 0; i < indicesArr.length; i++) {
+        console.log("found " + docs[indicesArr[i] - 1].room_name);
+        ans.push(docs[indicesArr[i] - 1]);
+    }
+    return ans;
+}
 
 function findRoomInDb(location,num_of_people,callback) {
     location_cleanup(location, function(cleaned_location) {
@@ -30,14 +46,12 @@ function findRoomInDb(location,num_of_people,callback) {
 
         console.log(cleaned_nop);
 
-    EscapeRoom.find({'$and': [ {"location": {'$regex': cleaned_location}},{"max_players": {'$gt': cleaned_nop}}]},{'room_name': true},function(err, docs) {
+    EscapeRoom.find({'$and': [ { '$or': [{"location": {'$regex': cleaned_location}},{"region": {'$regex': cleaned_location}},{"region_2": {'$regex': cleaned_location}}]},{"max_players": {'$gt': cleaned_nop}}]},{'room_name': true,'company_name': true,'website': true,'phone': true,'phone_2':true,'address': true},function(err, docs) {
         if (err) {
             handleError(res, err.message, "Failed to get rooms.");
         } else {
             if(docs.length > 0){
-                var i = Math.floor(Math.random() * (docs.length -1));
-                console.log("found " + docs[i].room_name);
-                return callback(docs[i].room_name)
+                return callback(chooseNRooms(docs))
             } else return callback(undefined)
         }
     })
@@ -48,13 +62,24 @@ function findRoomInDb(location,num_of_people,callback) {
 }
 
 function findRoomByName(room_name,callback) {
-    console.log("trying to find " + room_name);
+    console.log("trying to find by name: " + room_name);
 
-    EscapeRoom.find({"room_name": {'$regex': room_name}},{'room_name': true,'location': true},function(err, docs) {
+    EscapeRoom.find({"room_name": {'$regex': room_name,'$options': 'i'}},{'room_name': true,'company_name': true,'website': true,'phone': true,'phone2':true,'address': true},function(err, docs) {
             if(docs.length > 0){
-                console.log("found " + docs[0].room_name);
-                return callback(docs[0].room_name + " נמצא ב" + docs[0].location)
+                return callback(chooseNRooms(docs))
             } else return callback(undefined)
+
+    })
+}
+
+function findRoomsByCompany(company_name,callback) {
+    console.log("trying to find by company: " + company_name);
+
+    EscapeRoom.find({"company_name": new RegExp('^' + company_name, 'i')},{'room_name': true,'company_name': true,'website': true,'phone': true,'phone2':true,'address': true},function(err, docs) {
+        if(docs.length > 0){
+            console.log("found " + docs.length + "rooms");
+            return callback(chooseNRooms(docs))
+        } else return callback(undefined)
 
     })
 }
@@ -110,7 +135,20 @@ function nop_cleanup(number_of_people, callback) {
 
 }
 
+function getRandomRoomIndices(num_of_rooms,total) {
+    var arr = [];
+    while(arr.length < Math.min(total,num_of_rooms)){
+        var randomnumber = Math.ceil(Math.random()*total);
+        if(arr.indexOf(randomnumber) > -1) continue;
+        arr[arr.length] = randomnumber;
+    }
+    return arr;
+
+}
+
 module.exports = {
     findRoomInDb: findRoomInDb,
-    findRoomByName: findRoomByName
+    findRoomByName: findRoomByName,
+    location_cleanup: location_cleanup,
+    findRoomsByCompany: findRoomsByCompany
 };

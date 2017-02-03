@@ -7,42 +7,42 @@ var DB = require('./connectors/mongoose');
 var FB = require('./connectors/facebook');
 
 
-
-
 // LETS SAVE USER SESSIONS
-var sessions = {}
+var sessions = {};
 
 var findOrCreateSession = function (fbid) {
-  var sessionId
+    var sessionId;
 
-  // DOES USER SESSION ALREADY EXIST?
-  Object.keys(sessions).forEach(k => {
-    if (sessions[k].fbid === fbid) {
-      // YUP
-      sessionId = k
+    // DOES USER SESSION ALREADY EXIST?
+    Object.keys(sessions).forEach(k => {
+        if (sessions[k].fbid === fbid
+    )
+    {
+        // YUP
+        sessionId = k
     }
-  })
+})
 
-  // No session so we will create one
-  if (!sessionId) {
-    sessionId = new Date().toISOString()
-    sessions[sessionId] = {
-      fbid: fbid,
-      context: {
-        _fbid_: fbid
-      }
+    // No session so we will create one
+    if (!sessionId) {
+        sessionId = new Date().toISOString();
+        sessions[sessionId] = {
+            fbid: fbid,
+            context: {
+                _fbid_: fbid
+            }
+        }
     }
-  }
 
-  return sessionId
-}
+    return sessionId
+};
 
 var firstEntityValue = function (entities, entity) {
-    console.log(entities)
+    console.log(entities);
     var val = entities && entities[entity] &&
         Array.isArray(entities[entity]) &&
         entities[entity].length > 0 &&
-        entities[entity][0].value
+        entities[entity][0].value;
 
     if (!val) {
         return null
@@ -55,11 +55,12 @@ var actions = {
     send(request, response) {
         const {sessionId, context, entities} = request;
         const {text, quickreplies} = response;
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             const recipientId = sessions[sessionId].fbid;
-
-            FB.newMessage(recipientId, text)
-
+            if(context.room_list) {
+                var error_msg = generateErrorMsg(context);
+                FB.newMessage(recipientId,error_msg, context.room_list);
+            }
 
             return resolve();
         });
@@ -67,18 +68,24 @@ var actions = {
 
 
     findEscapeRoom({context, entities}) {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             var location = firstEntityValue(entities, 'location');
-            var num_of_people = firstEntityValue(entities,'math_expression')
-            if (location) {
-                console.log("wit received: " + location);
-                console.log("wit received: " + num_of_people);
+            if(location) {
+                DB.location_cleanup(location, function (cleaned_location) {
+                    context.location = cleaned_location;
 
-                DB.findRoomInDb(location,num_of_people, function(response) {
-                        context.room_name = response || 'חדרים אבל אין לי מושג מה זה ' + location;
-                    return resolve(context);
+                    var num_of_people = firstEntityValue(entities, 'math_expression');
+                    if (cleaned_location) {
+                        console.log("wit received: " + location);
+                        console.log("wit received: " + num_of_people);
 
-                })
+                        DB.findRoomInDb(location, num_of_people, function (response) {
+                            context.room_list = createRoomsList(response);
+                            return resolve(context);
+
+                        })
+                    }
+                });
             }
         });
     }
@@ -93,28 +100,31 @@ const wit = new Wit({
 
 
 var read = function (sender, message) {
-		// Let's find the user
-		var sessionId = findOrCreateSession(sender)
-		// Let's forward the message to the Wit.ai bot engine
-		// This will run all actions until there are no more actions left to do
-			wit.runActions(
-              sessionId, // the user's current session
-              message, // the user's message
-              sessions[sessionId].context // the user's current session state
-            ).then((context) => {
-              // Our bot did everything it has to do.
-              // Now it's waiting for further messages to proceed.
-              console.log('Waiting for next user messages');
+    // Let's find the user
+    var sessionId = findOrCreateSession(sender);
+    // Let's forward the message to the Wit.ai bot engine
+    // This will run all actions until there are no more actions left to do
+    wit.runActions(
+        sessionId, // the user's current session
+        message, // the user's message
+        sessions[sessionId].context // the user's current session state
+    ).then((context) => {
+        delete context.location;
+        delete context.room_list;
+        // Our bot did everything it has to do.
+        // Now it's waiting for further messages to proceed.
+        console.log('Waiting for next user messages');
 
-              // Updating the user's current session state
-              sessions[sessionId].context = context;
-            })
-            .catch((err) => {
-              console.error('Oops! Got an error from Wit: ', err.stack || err);
-            })
-}
+    // Updating the user's current session state
+    sessions[sessionId].context = context;
+})
+    .
+    catch((err) => {
+        console.error('Oops! Got an error from Wit: ', err.stack || err);
+})
+};
 
-function easterEggs(message,callback) {
+function easterEggs(message, callback) {
     if (message == "אוינק") {
         return callback(emoji.emojify(':pig_nose: :pig_nose: :pig_nose:'))
     } else {
@@ -122,16 +132,67 @@ function easterEggs(message,callback) {
     }
 }
 
-function findRoomByName(message,callback) {
+function findRoomByName(message, callback) {
     DB.findRoomByName(message, function (response) {
-        return callback(response)
+    if(response) {
+        return callback(createRoomsList(response));
+    } else {
+        return callback(undefined);
+    }
     });
+}
+
+function findRoomsByCompany(message,callback) {
+    DB.findRoomsByCompany(message,function (response) {
+        if(response) {
+            return callback(createRoomsList(response));
+        } else {
+            return callback(undefined);
+        }
+    });
+}
+
+function createRoomsList(response) {
+    var list = [];
+    if(response) {
+        for (var i = 0; i < response.length; i++) {
+            var url_button = new Object();
+            url_button.title = 'הזמנ/י';
+            url_button.type = 'web_url';
+            url_button.url = response[i].website || "";
+            url_button.messenger_extensions = false;
+            url_button.webview_height_ratio = 'tall';
+
+            var buttons = [];
+            buttons.push(url_button);
+
+            var default_action = new Object();
+            default_action.type = 'web_url';
+            default_action.url = response[i].website || "";
+            default_action.messenger_extensions = false;
+            default_action.webview_height_ratio = 'tall';
+
+            var element = new Object();
+
+            element.title = response[i].room_name;
+            element.subtitle = response[i].address + "\n" + " טל׳: " + response[i].phone;
+            element.buttons = buttons;
+            element.default_action = default_action;
+            list.push(element)
+        }
+    }
+    return list
+}
+
+function generateErrorMsg(context) {
+    return 'אני לא יודע מה זה ' + context.location + ", נסה שוב";
 }
 
 
 module.exports = {
-	findOrCreateSession: findOrCreateSession,
-	read: read,
+    findOrCreateSession: findOrCreateSession,
+    read: read,
     easterEggs: easterEggs,
-    findRoomByName: findRoomByName
+    findRoomByName: findRoomByName,
+    findRoomsByCompany: findRoomsByCompany
 };

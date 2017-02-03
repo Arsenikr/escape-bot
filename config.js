@@ -15,7 +15,9 @@ var FB_VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN || 'my_voice_is_my_password_ve
 
 var MONGODB_URL = process.env.PROD_MONGODB || 'mongodb://127.0.0.1:27017/escape_bot';
 
-var ESCAPE_ROOMS_COLLECTION = "escape_rooms";
+var ESCAPE_ROOMS_COLLECTION = "escape_rooms_new";
+
+var NUM_OF_ROOMS_TO_RETURN = 10;
 
 module.exports = {
   WIT_TOKEN: WIT_TOKEN,
@@ -23,4 +25,5 @@ module.exports = {
   FB_VERIFY_TOKEN: FB_VERIFY_TOKEN,
   MONGODB_URL: MONGODB_URL,
   ESCAPE_ROOMS_COLLECTION: ESCAPE_ROOMS_COLLECTION,
-}
+    NUM_OF_ROOMS_TO_RETURN: NUM_OF_ROOMS_TO_RETURN
+};

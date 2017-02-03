@@ -10,9 +10,6 @@ var Bot = require('./bot')
 const emoji = require('node-emoji')
 
 
-
-
-
 app.set('port', (process.env.PORT || 5000))
 
 // Process application/x-www-form-urlencoded
@@ -36,11 +33,11 @@ app.get('/webhook/', function (req, res) {
 
 // Spin up the server
 
-    // Initialize the app.
+// Initialize the app.
 var server = app.listen(process.env.PORT || 8080, function () {
-        var port = server.address().port;
-        console.log("App now running on port", port);
-    });
+    var port = server.address().port;
+    console.log("App now running on port", port);
+});
 
 // Generic error handler used by all endpoints.
 function handleError(res, reason, message, code) {
@@ -50,59 +47,65 @@ function handleError(res, reason, message, code) {
 
 //to send messages to facebook
 app.post('/webhook', function (req, res) {
-  var entry = FB.getMessageEntry(req.body)
-  // IS THE ENTRY A VALID MESSAGE?
-  if (entry && entry.message) {
-    if (entry.message.attachments) {
-      // NOT SMART ENOUGH FOR ATTACHMENTS YET
-      FB.newMessage(entry.sender.id, "זה מעניין!")
-    } else {
+    var entry = FB.getMessageEntry(req.body);
+    // IS THE ENTRY A VALID MESSAGE?
+    if (entry && entry.message) {
+        if (entry.message.attachments) {
+            // NOT SMART ENOUGH FOR ATTACHMENTS YET
+            FB.newMessage(entry.sender.id, "זה מעניין!")
+        } else {
 
-        Bot.easterEggs(entry.message.text, function (reply) {
-            if(reply){
-                FB.newMessage(entry.sender.id,reply)
-            } else {
-                Bot.findRoomByName(entry.message.text, function ( reply) {
-                    if(reply){
-                        FB.newMessage(entry.sender.id,reply)
-                    } else {
-                        Bot.read(entry.sender.id, entry.message.text, function (sender, reply) {
-                           if(reply) {
-                               FB.newMessage(entry.sender.id, "אני ממליץ על " + reply)
-                           } else {
-                               handleNotUnderstand(entry.message.text)
-                           }
-                        })
-                    }
-                })
+            Bot.easterEggs(entry.message.text, function (reply) {
+                if (reply) {
+                    FB.newMessage(entry.sender.id, reply)
+                } else {
+                    Bot.findRoomByName(entry.message.text, function (reply) {
+                        if (reply && reply.length > 0) {
+                            FB.newMessage(entry.sender.id, "",reply)
+                        } else {
+                            Bot.findRoomsByCompany(entry.message.text, function (reply) {
+                                if (reply && reply.length > 0) {
+                                    FB.newMessage(entry.sender.id, "",reply)
+                                } else {
 
-            }
-
-        });
+                                    Bot.read(entry.sender.id, entry.message.text, function (sender, reply) {
+                                        if (reply) {
+                                            // FB.newMessage(entry.sender.id, "אני ממליץ על " + reply)
+                                        } else {
+                                            handleNotUnderstand(entry.message.text)
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
     }
-  }
 
-  res.sendStatus(200)
+    res.sendStatus(200)
 });
 
-function handleNotUnderstand(message){
-    FB.newMessage(entry.sender.id, "תסביר את עצמך קצת יותר טוב, לא הבנתי מה זה " + message)
+function handleNotUnderstand(message) {
+
+    FB.newMessage(entry.sender.id, 'אני לא יודע מה זה ' + message + ", נסה שוב")
 }
 
 app.post('/test/', function (req, res) {
-	var message = req.body.message;
+    var message = req.body.message;
     console.log(message);
 
     Bot.easterEggs(message, function (reply) {
-        if(reply){
+        if (reply) {
             res.send(reply)
         } else {
-            Bot.findRoomByName(message, function ( reply) {
-                if(reply){
+            Bot.findRoomByName(message, function (reply) {
+                if (reply) {
                     res.send(reply)
                 } else {
                     Bot.read("moshe", message, function (sender, reply) {
-                        res.send("אני ממליץ על: " + reply  )
+                        res.send("אני ממליץ על: " + reply[0].room_name)
                     })
                 }
             })
