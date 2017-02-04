@@ -27,14 +27,32 @@ var EscapeRoomsSchema = new Schema({
 // Mongoose Model definition
 var EscapeRoom = mongoose.model('escape_rooms', EscapeRoomsSchema,'escape_rooms_new');
 
+var EasterEggSchema = new Schema({
+   Q: String,
+   A: String
+});
 
-function chooseNRooms(docs) {
-    var indicesArr = getRandomRoomIndices(Config.NUM_OF_ROOMS_TO_RETURN, docs.length);
+var EasterEggs = mongoose.model('easter_eggs', EasterEggSchema,'easter_eggs');
+
+var ErrorMessageSchema = new Schema({
+    Q: String,
+    A: String
+});
+
+var ErrorMessages = mongoose.model('error_messages', ErrorMessageSchema,'error_messages');
+
+function chooseNDocs(docs,num_of_docs_to_choose) {
+    var num_to_choose = num_of_docs_to_choose || Config.NUM_OF_ROOMS_TO_RETURN;
+    var indicesArr = getRandomDocIndices(num_to_choose, docs.length);
     var ans = [];
-    //TODO facebook list limit is 10, implement pagination
-    for (var i = 0; i < indicesArr.length; i++) {
-        console.log("found " + docs[indicesArr[i] - 1].room_name);
-        ans.push(docs[indicesArr[i] - 1]);
+    if(docs.length === 1){
+        ans.push(docs[0]);
+    } else {
+        //TODO facebook list limit is 10, implement pagination
+        for (var i = 0; i < indicesArr.length; i++) {
+            console.log("found " + docs[indicesArr[i] - 1].room_name);
+            ans.push(docs[indicesArr[i] - 1]);
+        }
     }
     return ans;
 }
@@ -50,8 +68,8 @@ function findRoomInDb(location,num_of_people,callback) {
         if (err) {
             handleError(res, err.message, "Failed to get rooms.");
         } else {
-            if(docs.length > 0){
-                return callback(chooseNRooms(docs))
+            if(docs && docs.length > 0){
+                return callback(chooseNDocs(docs))
             } else return callback(undefined)
         }
     })
@@ -65,8 +83,8 @@ function findRoomByName(room_name,callback) {
     console.log("trying to find by name: " + room_name);
 
     EscapeRoom.find({"room_name": {'$regex': room_name,'$options': 'i'}},{'room_name': true,'company_name': true,'website': true,'phone': true,'phone2':true,'address': true},function(err, docs) {
-            if(docs.length > 0){
-                return callback(chooseNRooms(docs))
+            if(docs && docs.length > 0){
+                return callback(chooseNDocs(docs))
             } else return callback(undefined)
 
     })
@@ -76,12 +94,33 @@ function findRoomsByCompany(company_name,callback) {
     console.log("trying to find by company: " + company_name);
 
     EscapeRoom.find({"company_name": new RegExp('^' + company_name, 'i')},{'room_name': true,'company_name': true,'website': true,'phone': true,'phone2':true,'address': true},function(err, docs) {
-        if(docs.length > 0){
+        if(docs && docs.length > 0){
             console.log("found " + docs.length + "rooms");
-            return callback(chooseNRooms(docs))
+            return callback(chooseNDocs(docs))
         } else return callback(undefined)
 
     })
+}
+
+function findEasterEgg(message, callback) {
+    console.log("trying to find easter egg: " + message);
+
+    EasterEggs.find({"Q": {'$regex': message}}, {'A': true}, function (err, docs) {
+
+        if (docs && docs.length > 0) {
+            var cc = chooseNDocs(docs, 1);
+            return callback(cc);
+        }  else return callback(undefined)
+    });
+}
+
+function findErrorMessage(message_type,callback) {
+    console.log("trying to find error message of the type: " + message_type);
+    ErrorMessages.find({"Q": new RegExp('^' + message_type, 'i')}, {'A': true}, function (err, docs) {
+        if (docs.length > 0) {
+            return callback(chooseNDocs(docs, 1))
+        }  else return callback(undefined)
+    });
 }
 
 function location_cleanup(location,callback) {
@@ -135,7 +174,7 @@ function nop_cleanup(number_of_people, callback) {
 
 }
 
-function getRandomRoomIndices(num_of_rooms,total) {
+function getRandomDocIndices(num_of_rooms, total) {
     var arr = [];
     while(arr.length < Math.min(total,num_of_rooms)){
         var randomnumber = Math.ceil(Math.random()*total);
@@ -150,5 +189,8 @@ module.exports = {
     findRoomInDb: findRoomInDb,
     findRoomByName: findRoomByName,
     location_cleanup: location_cleanup,
-    findRoomsByCompany: findRoomsByCompany
+    findRoomsByCompany: findRoomsByCompany,
+    findEasterEgg: findEasterEgg,
+    findErrorMessage: findErrorMessage
+
 };

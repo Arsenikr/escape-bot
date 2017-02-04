@@ -57,13 +57,19 @@ var actions = {
         const {text, quickreplies} = response;
         return new Promise(function (resolve, reject) {
             const recipientId = sessions[sessionId].fbid;
-            if(context.room_list) {
-                var error_msg = generateErrorMsg(context);
-                FB.newMessage(recipientId,error_msg, context.room_list);
+
+            if(context.room_list && context.room_list.length > 0) {
+                FB.newMessage(recipientId,"", context.room_list);
+            } else {
+
+                generateErrorMsg(context, function (error_msg) {
+                    FB.newMessage(recipientId, error_msg);
+                });
             }
 
             return resolve();
-        });
+            });
+
     },
 
 
@@ -86,6 +92,8 @@ var actions = {
                         })
                     }
                 });
+            } else {
+                return resolve(context)
             }
         });
     }
@@ -128,7 +136,13 @@ function easterEggs(message, callback) {
     if (message == "אוינק") {
         return callback(emoji.emojify(':pig_nose: :pig_nose: :pig_nose:'))
     } else {
-        return callback(undefined)
+        DB.findEasterEgg(message, function (response) {
+           if(response){
+               return callback(response);
+           } else{
+            return callback(undefined);
+           }
+        });
     }
 }
 
@@ -184,8 +198,19 @@ function createRoomsList(response) {
     return list
 }
 
-function generateErrorMsg(context) {
-    return 'אני לא יודע מה זה ' + context.location + ", נסה שוב";
+function generateErrorMsg(context, callback) {
+    if(context.location) {
+        DB.findErrorMessage('location',function (response) {
+           if(response){
+               var msg = response[0].A.replace('<>',context.location);
+               return callback(msg);
+           }  else{
+               return callback('לא הבנתי את כוונתך, אנא נסה שוב');
+           }
+        });
+    } else {
+        return callback('לא הבנתי את כוונתך, אנא נסה שוב');
+    }
 }
 
 

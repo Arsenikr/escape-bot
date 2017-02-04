@@ -29,7 +29,7 @@ app.get('/webhook/', function (req, res) {
         res.send(req.query['hub.challenge'])
     }
     res.send('Error, wrong token')
-})
+});
 
 // Spin up the server
 
@@ -57,7 +57,7 @@ app.post('/webhook', function (req, res) {
 
             Bot.easterEggs(entry.message.text, function (reply) {
                 if (reply) {
-                    FB.newMessage(entry.sender.id, reply)
+                    FB.newMessage(entry.sender.id, reply[0].A)
                 } else {
                     Bot.findRoomByName(entry.message.text, function (reply) {
                         if (reply && reply.length > 0) {
