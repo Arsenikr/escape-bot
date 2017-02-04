@@ -68,8 +68,11 @@ app.post('/webhook', function (req, res) {
                                     FB.newMessage(entry.sender.id, "",reply)
                                 } else {
 
-                                    Bot.read(entry.sender.id, entry.message.text, function (sender, reply) {
-                                        if (reply) {
+                                    Bot.read(entry.sender.id, entry.message.text, function (error,sender, reply) {
+                                        if(error){
+                                            FB.newMessage(entry.sender.id,'לא הבנתי את כוונתך, אנא נסה שוב')
+                                        }
+                                        else if (reply) {
                                             // FB.newMessage(entry.sender.id, "אני ממליץ על " + reply)
                                         } else {
                                             handleNotUnderstand(entry.message.text)

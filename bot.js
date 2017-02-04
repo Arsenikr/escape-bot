@@ -58,8 +58,8 @@ var actions = {
         return new Promise(function (resolve, reject) {
             const recipientId = sessions[sessionId].fbid;
 
-            if(context.room_list && context.room_list.length > 0) {
-                FB.newMessage(recipientId,"", context.room_list);
+            if (context.room_list && context.room_list.length > 0) {
+                FB.newMessage(recipientId, "", context.room_list);
             } else {
 
                 generateErrorMsg(context, function (error_msg) {
@@ -68,7 +68,7 @@ var actions = {
             }
 
             return resolve();
-            });
+        });
 
     },
 
@@ -76,24 +76,23 @@ var actions = {
     findEscapeRoom({context, entities}) {
         return new Promise(function (resolve, reject) {
             var location = firstEntityValue(entities, 'location');
-            if(location) {
-                DB.location_cleanup(location, function (cleaned_location) {
-                    context.location = cleaned_location;
+            if (location) {
+                context.location = location;
 
-                    var num_of_people = firstEntityValue(entities, 'math_expression');
-                    if (cleaned_location) {
-                        console.log("wit received: " + location);
-                        console.log("wit received: " + num_of_people);
+                var num_of_people = firstEntityValue(entities, 'math_expression');
+                console.log("wit received: " + location);
+                console.log("wit received: " + num_of_people);
 
-                        DB.findRoomInDb(location, num_of_people, function (response) {
-                            context.room_list = createRoomsList(response);
-                            return resolve(context);
+                DB.findRoomInDb(location, num_of_people).then(response => {
+                    context.room_list = createRoomsList(response);
+                return resolve(context);
 
-                        })
-                    }
                 });
+
+
+
             } else {
-                return resolve(context)
+                return resolve(context);
             }
         });
     }
@@ -146,14 +145,20 @@ function easterEggs(message, callback) {
     }
 }
 
-function findRoomByName(message, callback) {
-    DB.findRoomByName(message, function (response) {
-    if(response) {
-        return callback(createRoomsList(response));
-    } else {
-        return callback(undefined);
-    }
-    });
+function findRoomByName(message) {
+    return new Promise(
+        function (resolve, reject) {
+
+            DB.findRoomByName(message).then(response =>  {
+                if (response) {
+                    resolve(createRoomsList(response));
+                } else {
+                    resolve(undefined);
+                }
+            }).catch(err => {
+                reject(err);
+            });
+        });
 }
 
 function findRoomsByCompany(message,callback) {
@@ -189,7 +194,7 @@ function createRoomsList(response) {
             var element = new Object();
 
             element.title = response[i].room_name;
-            element.subtitle = response[i].address + "\n" + " טל׳: " + response[i].phone;
+            element.subtitle = response[i].address + "\n" + "טל׳: " + response[i].phone;
             element.buttons = buttons;
             element.default_action = default_action;
             list.push(element)

@@ -57,37 +57,57 @@ function chooseNDocs(docs,num_of_docs_to_choose) {
     return ans;
 }
 
-function findRoomInDb(location,num_of_people,callback) {
-    location_cleanup(location, function(cleaned_location) {
+function findRoomInDb(location, num_of_people) {
+    return new Promise(
+        function (resolve, reject) {
 
-       nop_cleanup(num_of_people, function (cleaned_nop) {
+            var cleaned_location = location_cleanup(location);
+            var cleaned_nop = nop_cleanup(num_of_people);
 
-        console.log(cleaned_nop);
+            console.log(cleaned_nop);
 
-    EscapeRoom.find({'$and': [ { '$or': [{"location": {'$regex': cleaned_location}},{"region": {'$regex': cleaned_location}},{"region_2": {'$regex': cleaned_location}}]},{"max_players": {'$gt': cleaned_nop}}]},{'room_name': true,'company_name': true,'website': true,'phone': true,'phone_2':true,'address': true},function(err, docs) {
-        if (err) {
-            handleError(res, err.message, "Failed to get rooms.");
-        } else {
-            if(docs && docs.length > 0){
-                return callback(chooseNDocs(docs))
-            } else return callback(undefined)
-        }
-    })
+            EscapeRoom.find({'$and': [{'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}, {"region_2": {'$regex': cleaned_location}}]}, {"max_players": {'$gt': cleaned_nop}}]}, {
+                'room_name': true,
+                'company_name': true,
+                'website': true,
+                'phone': true,
+                'phone_2': true,
+                'address': true
+            }, function (err, docs) {
+                if (err) {
+                    reject(err.message, "Failed to get rooms.");
+                } else {
+                    if (docs && docs.length > 0) {
+                        resolve(chooseNDocs(docs))
+                    } resolve(undefined)
+                }
+            })
         });
-
-
-    });
 }
 
-function findRoomByName(room_name,callback) {
-    console.log("trying to find by name: " + room_name);
 
-    EscapeRoom.find({"room_name": {'$regex': room_name,'$options': 'i'}},{'room_name': true,'company_name': true,'website': true,'phone': true,'phone2':true,'address': true},function(err, docs) {
-            if(docs && docs.length > 0){
-                return callback(chooseNDocs(docs))
-            } else return callback(undefined)
+function findRoomByName(room_name) {
+    return new Promise(
+        function (resolve, reject) {
 
-    })
+            console.log("trying to find by name: " + room_name);
+
+            EscapeRoom.find({"room_name": {'$regex': room_name, '$options': 'i'}}, {
+                'room_name': true,
+                'company_name': true,
+                'website': true,
+                'phone': true,
+                'phone2': true,
+                'address': true
+            }, function (err, docs) {
+                if(err){
+                    reject(err);
+                } else if (docs && docs.length > 0) {
+                    resolve(chooseNDocs(docs))
+                } else resolve(undefined)
+
+            })
+        });
 }
 
 function findRoomsByCompany(company_name,callback) {
@@ -123,55 +143,54 @@ function findErrorMessage(message_type,callback) {
     });
 }
 
-function location_cleanup(location,callback) {
-    if(location.charAt(0) === 'ב' )
-        return callback(location.substr(1));
-    else return callback(location)
+function location_cleanup(location) {
+            if (location.charAt(0) === 'ב')
+                return location.substr(1);
+            else return location;
 }
 
-function nop_cleanup(number_of_people, callback) {
-    if(number_of_people) {
-        if (number_of_people.indexOf("שני") > -1 || number_of_people.indexOf("שתי") > -1 || number_of_people.substr(1) === '2') {
-            return callback(2);
-        }
-        else if (number_of_people.indexOf("שלוש") > -1 || number_of_people.substr(1) === '3') {
-            return callback(3);
-        }
-        else if (number_of_people.indexOf("ארבע") > -1 || number_of_people.substr(1) === '4') {
-            return callback(4);
-        }
-        else if (number_of_people.indexOf("חמש") > -1 || number_of_people.indexOf("חמישה") > -1 || number_of_people.substr(1) === '5') {
-            return callback(5);
+function nop_cleanup(number_of_people) {
+            if (number_of_people) {
+                if (number_of_people.indexOf("שני") > -1 || number_of_people.indexOf("שתי") > -1 || number_of_people.substr(1) === '2') {
+                    return 2;
+                }
+                else if (number_of_people.indexOf("שלוש") > -1 || number_of_people.substr(1) === '3') {
+                    return 3;
+                }
+                else if (number_of_people.indexOf("ארבע") > -1 || number_of_people.substr(1) === '4') {
+                    return 4;
+                }
+                else if (number_of_people.indexOf("חמש") > -1 || number_of_people.indexOf("חמישה") > -1 || number_of_people.substr(1) === '5') {
+                    return 5;
 
-        }
-        else if (number_of_people.indexOf("שש") > -1 || number_of_people.indexOf("שישה") > -1 || number_of_people.substr(1) === '6') {
-            return callback(6);
+                }
+                else if (number_of_people.indexOf("שש") > -1 || number_of_people.indexOf("שישה") > -1 || number_of_people.substr(1) === '6') {
+                    return 6;
 
-        }
-        else if (number_of_people.indexOf("שבע") > -1 || number_of_people.substr(1) === '7') {
-            return callback(7);
+                }
+                else if (number_of_people.indexOf("שבע") > -1 || number_of_people.substr(1) === '7') {
+                    return 7;
 
-        }
-        else if (number_of_people.indexOf("שמונה") > -1 || number_of_people.substr(1) === '8') {
-            return callback(8);
+                }
+                else if (number_of_people.indexOf("שמונה") > -1 || number_of_people.substr(1) === '8') {
+                    return 8;
 
-        }
-        else if (number_of_people.indexOf("תשע") > -1 || number_of_people.substr(1) === '9') {
-            return callback(9);
+                }
+                else if (number_of_people.indexOf("תשע") > -1 || number_of_people.substr(1) === '9') {
+                    return 9;
 
-        }
-        else if (number_of_people.indexOf("עשר") > -1 || number_of_people.substr(1) === '10') {
-            return callback(10);
+                }
+                else if (number_of_people.indexOf("עשר") > -1 || number_of_people.substr(1) === '10') {
+                    return 10;
 
-        }
+                }
 
-        else {
-            return callback(1);
-        }
-    } else {
-        return callback(1);
-    }
-
+                else {
+                    return 1;
+                }
+            } else {
+                return 1;
+            }
 }
 
 function getRandomDocIndices(num_of_rooms, total) {
