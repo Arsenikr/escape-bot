@@ -128,6 +128,11 @@ var read = function (sender, message) {
     .
     catch((err) => {
         console.error('Oops! Got an error from Wit: ', err.stack || err);
+    var context = sessions[sessionId].context;
+    generateErrorMsg(context, function (error_msg) {
+        var recepient_id = sessions[sessionId].fbid;
+        FB.newMessage(recepient_id, error_msg);
+    });
 })
 };
 
