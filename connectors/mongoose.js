@@ -2,6 +2,7 @@
 
 var Config = require('../config');
 var mongoose = require('mongoose');
+var NodeCache = require( 'node-cache' );
 
 mongoose.Promise = global.Promise;
 
@@ -40,6 +41,8 @@ var ErrorMessageSchema = new Schema({
 });
 
 var ErrorMessages = mongoose.model('error_messages', ErrorMessageSchema,'error_messages');
+
+var EasterEggCache = new NodeCache({ stdTTL: 86400});
 
 function chooseNDocs(docs,num_of_docs_to_choose) {
     var num_to_choose = num_of_docs_to_choose || Config.NUM_OF_ROOMS_TO_RETURN;
@@ -102,17 +105,67 @@ function findRoomsByCompany(company_name,callback) {
     })
 }
 
+function populateEasterEggsCache(rrr,callback) {
+    EasterEggs.find({}, {'Q': true, 'A': true}, function (err, docs) {
+        console.log("polulating cache (again)");
+        if (docs && docs.length > 0) {
+            for (var i = 0; i < docs.length; i++) {
+                EasterEggCache.set(docs[i].Q, docs[i].A);
+            }
+            EasterEggCache.keys( function( err, mykeys ){
+                if( !err ){
+                    return callback(mykeys)
+                }
+            });
+        }
+    });
+}
+
+function findEasterEggInCache(keys,message,callback) {
+    for (var i = 0; i < keys.length; i++) {
+        if(message.indexOf(keys[i]) !== -1) {
+            return callback(keys[i]);
+        }
+    }
+    return callback(undefined);
+}
+
+
 function findEasterEgg(message, callback) {
     console.log("trying to find easter egg: " + message);
 
-    EasterEggs.find({"Q": {'$regex': message}}, {'A': true}, function (err, docs) {
+    if(EasterEggCache.keys.length  == 0) {
+        EasterEggCache.keys(function (err, mykeys) {
+            if (!err) {
+                if (mykeys.length > 0) {
+                    findEasterEggInCache(mykeys,message, function (ans) {
+                        if (ans) {
+                            return callback(ans);
+                        } else {
+                            return callback(undefined);
+                        }
+                    });
+                } else {
+                    populateEasterEggsCache("", function (mykeys) {
+                        findEasterEggInCache(mykeys, message, function (ans) {
+                            if (ans) {
+                                EasterEggCache.get(ans, function (err, msg) {
+                                    if (!err) {
 
-        if (docs && docs.length > 0) {
-            var cc = chooseNDocs(docs, 1);
-            return callback(cc);
-        }  else return callback(undefined)
-    });
+                                        return callback(msg);
+                                    }
+                                });
+                            } else {
+                                return callback(undefined);
+                            }
+                        });
+                    });
+                }
+            }
+        });
+    }
 }
+
 
 function findErrorMessage(message_type,callback) {
     console.log("trying to find error message of the type: " + message_type);

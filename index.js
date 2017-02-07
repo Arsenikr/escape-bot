@@ -57,7 +57,7 @@ app.post('/webhook', function (req, res) {
 
             Bot.easterEggs(entry.message.text, function (reply) {
                 if (reply) {
-                    FB.newMessage(entry.sender.id, reply[0].A)
+                    FB.newMessage(entry.sender.id, reply)
                 } else {
                     Bot.findRoomByName(entry.message.text, function (reply) {
                         if (reply && reply.length > 0) {
