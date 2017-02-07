@@ -184,7 +184,7 @@ function location_cleanup(location,callback) {
 
 function nop_cleanup(number_of_people, callback) {
     if(number_of_people) {
-        if (number_of_people.indexOf("שני") > -1 || number_of_people.indexOf("שתי") > -1 || number_of_people.substr(1) === '2') {
+        if (number_of_people.indexOf("שני") > -1 || number_of_people.indexOf("שתי") > -1 || number_of_people.indexOf("זוג") || number_of_people.substr(1) === '2') {
             return callback(2);
         }
         else if (number_of_people.indexOf("שלוש") > -1 || number_of_people.substr(1) === '3') {
