@@ -205,14 +205,16 @@ function createRoomsList(response) {
 
 function generateErrorMsg(context, callback) {
     if(context.location) {
-        DB.findErrorMessage('location',function (response) {
-           if(response){
-               var msg = response[0].A.replace('<>',context.location);
-               return callback(msg);
-           }  else{
-               return callback('לא הבנתי את כוונתך, אנא נסה שוב');
-           }
+        DB.findErrorMessage('location', function (response) {
+            if (response) {
+                var msg = response[0].A.replace('<>', context.location);
+                return callback(msg);
+            } else {
+                return callback('לא הבנתי את כוונתך, אנא נסה שוב');
+            }
         });
+    } else if(!context.location){
+        return callback('התפזרו לי קצת הבוטנים, חסר לי מיקום בשביל לאתר את מה שביקשת');
     } else {
         return callback('לא הבנתי את כוונתך, אנא נסה שוב');
     }
