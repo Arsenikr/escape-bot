@@ -42,7 +42,7 @@ var ErrorMessageSchema = new Schema({
 
 var ErrorMessages = mongoose.model('error_messages', ErrorMessageSchema,'error_messages');
 
-var EasterEggCache = new NodeCache({ stdTTL: 86400});
+var EasterEggCache = new NodeCache({ stdTTL: 0});
 
 function chooseNDocs(docs,num_of_docs_to_choose) {
     var num_to_choose = num_of_docs_to_choose || Config.NUM_OF_ROOMS_TO_RETURN;
