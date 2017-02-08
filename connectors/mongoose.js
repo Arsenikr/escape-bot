@@ -1,8 +1,8 @@
 'use strict';
 
-var Config = require('../config');
-var mongoose = require('mongoose');
-var NodeCache = require( 'node-cache' );
+const Config = require('../config');
+const mongoose = require('mongoose');
+const NodeCache = require( 'node-cache' );
 
 mongoose.Promise = global.Promise;
 
@@ -12,8 +12,8 @@ mongoose.connect(Config.MONGODB_URL, function (error) {
     }
 });
 
-var Schema = mongoose.Schema;
-var EscapeRoomsSchema = new Schema({
+const Schema = mongoose.Schema;
+const EscapeRoomsSchema = new Schema({
     room_name: String,
     company_name: String,
     location: String,
@@ -26,33 +26,33 @@ var EscapeRoomsSchema = new Schema({
 });
 
 // Mongoose Model definition
-var EscapeRoom = mongoose.model('escape_rooms', EscapeRoomsSchema,'escape_rooms_new');
+const EscapeRoom = mongoose.model('escape_rooms', EscapeRoomsSchema,'escape_rooms_new');
 
-var EasterEggSchema = new Schema({
+const EasterEggSchema = new Schema({
    Q: String,
    A: String
 });
 
-var EasterEggs = mongoose.model('easter_eggs', EasterEggSchema,'easter_eggs');
+const EasterEggs = mongoose.model('easter_eggs', EasterEggSchema,'easter_eggs');
 
-var ErrorMessageSchema = new Schema({
+const ErrorMessageSchema = new Schema({
     Q: String,
     A: String
 });
 
-var ErrorMessages = mongoose.model('error_messages', ErrorMessageSchema,'error_messages');
+const ErrorMessages = mongoose.model('error_messages', ErrorMessageSchema,'error_messages');
 
-var EasterEggCache = new NodeCache({ stdTTL: 0});
+const EasterEggCache = new NodeCache({ stdTTL: 86400});
 
 function chooseNDocs(docs,num_of_docs_to_choose) {
-    var num_to_choose = num_of_docs_to_choose || Config.NUM_OF_ROOMS_TO_RETURN;
-    var indicesArr = getRandomDocIndices(num_to_choose, docs.length);
-    var ans = [];
+    let num_to_choose = num_of_docs_to_choose || Config.NUM_OF_ROOMS_TO_RETURN;
+    let indicesArr = getRandomDocIndices(num_to_choose, docs.length);
+    let ans = [];
     if(docs.length === 1){
         ans.push(docs[0]);
     } else {
         //TODO facebook list limit is 10, implement pagination
-        for (var i = 0; i < indicesArr.length; i++) {
+        for (let i = 0; i < indicesArr.length; i++) {
             console.log("found " + docs[indicesArr[i] - 1].room_name);
             ans.push(docs[indicesArr[i] - 1]);
         }
@@ -109,7 +109,7 @@ function populateEasterEggsCache(rrr,callback) {
     EasterEggs.find({}, {'Q': true, 'A': true}, function (err, docs) {
         console.log("polulating cache (again)");
         if (docs && docs.length > 0) {
-            for (var i = 0; i < docs.length; i++) {
+            for (let i = 0; i < docs.length; i++) {
                 EasterEggCache.set(docs[i].Q, docs[i].A);
             }
             EasterEggCache.keys( function( err, mykeys ){
@@ -122,7 +122,7 @@ function populateEasterEggsCache(rrr,callback) {
 }
 
 function findEasterEggInCache(keys,message,callback) {
-    for (var i = 0; i < keys.length; i++) {
+    for (let i = 0; i < keys.length; i++) {
         if(message.indexOf(keys[i]) !== -1) {
             return callback(keys[i]);
         }
@@ -140,8 +140,11 @@ function findEasterEgg(message, callback) {
                 if (mykeys.length > 0) {
                     findEasterEggInCache(mykeys,message, function (ans) {
                         if (ans) {
-                            return callback(ans);
-                        } else {
+                            EasterEggCache.get(ans, function (err, msg) {
+                                if (!err) {
+                                    return callback(msg);
+                                }
+                            });                        } else {
                             return callback(undefined);
                         }
                     });
@@ -228,9 +231,9 @@ function nop_cleanup(number_of_people, callback) {
 }
 
 function getRandomDocIndices(num_of_rooms, total) {
-    var arr = [];
+    let arr = [];
     while(arr.length < Math.min(total,num_of_rooms)){
-        var randomnumber = Math.ceil(Math.random()*total);
+        let randomnumber = Math.ceil(Math.random()*total);
         if(arr.indexOf(randomnumber) > -1) continue;
         arr[arr.length] = randomnumber;
     }

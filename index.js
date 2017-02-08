@@ -1,27 +1,27 @@
 'use strict'
 
-const express = require('express')
-const bodyParser = require('body-parser')
-const request = require('request')
-const app = express()
-var Config = require('./config')
-var FB = require('./connectors/facebook')
-var Bot = require('./bot')
-const emoji = require('node-emoji')
+const express = require('express');
+const bodyParser = require('body-parser');
+const request = require('request');
+const app = express();
+const Config = require('./config');
+const FB = require('./connectors/facebook');
+const Bot = require('./bot');
+const emoji = require('node-emoji');
 
 
-app.set('port', (process.env.PORT || 5000))
+app.set('port', (process.env.PORT || 5000));
 
 // Process application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({extended: false}))
+app.use(bodyParser.urlencoded({extended: false}));
 
 // Process application/json
-app.use(bodyParser.json())
+app.use(bodyParser.json());
 
 // Index route
 app.get('/', function (req, res) {
     res.send('שלום עולם אני אסקייפ בוט המומחה לחדרי בריחה')
-})
+});
 
 // for Facebook verification
 app.get('/webhook/', function (req, res) {
@@ -34,8 +34,8 @@ app.get('/webhook/', function (req, res) {
 // Spin up the server
 
 // Initialize the app.
-var server = app.listen(process.env.PORT || 8080, function () {
-    var port = server.address().port;
+const server = app.listen(process.env.PORT || 8080, function () {
+    let port = server.address().port;
     console.log("App now running on port", port);
 });
 
@@ -47,7 +47,7 @@ function handleError(res, reason, message, code) {
 
 //to send messages to facebook
 app.post('/webhook', function (req, res) {
-    var entry = FB.getMessageEntry(req.body);
+    let entry = FB.getMessageEntry(req.body);
     // IS THE ENTRY A VALID MESSAGE?
     if (entry && entry.message) {
         if (entry.message.attachments) {
@@ -93,7 +93,7 @@ function handleNotUnderstand(message) {
 }
 
 app.post('/test/', function (req, res) {
-    var message = req.body.message;
+    let message = req.body.message;
     console.log(message);
 
     Bot.easterEggs(message, function (reply) {

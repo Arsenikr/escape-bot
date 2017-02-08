@@ -1,17 +1,17 @@
 'use strict'
 
-var Config = require('./config');
-var emoji = require('node-emoji');
-var Wit = require('node-wit').Wit;
-var DB = require('./connectors/mongoose');
-var FB = require('./connectors/facebook');
+const Config = require('./config');
+const emoji = require('node-emoji');
+const Wit = require('node-wit').Wit;
+const DB = require('./connectors/mongoose');
+const FB = require('./connectors/facebook');
 
 
 // LETS SAVE USER SESSIONS
-var sessions = {};
+const sessions = {};
 
-var findOrCreateSession = function (fbid) {
-    var sessionId;
+function findOrCreateSession(fbid) {
+    let sessionId;
 
     // DOES USER SESSION ALREADY EXIST?
     Object.keys(sessions).forEach(k => {
@@ -21,7 +21,7 @@ var findOrCreateSession = function (fbid) {
         // YUP
         sessionId = k
     }
-})
+});
 
     // No session so we will create one
     if (!sessionId) {
@@ -35,11 +35,11 @@ var findOrCreateSession = function (fbid) {
     }
 
     return sessionId
-};
+}
 
-var firstEntityValue = function (entities, entity) {
+function firstEntityValue(entities, entity) {
     console.log(entities);
-    var val = entities && entities[entity] &&
+    let val = entities && entities[entity] &&
         Array.isArray(entities[entity]) &&
         entities[entity].length > 0 &&
         entities[entity][0].value;
@@ -51,7 +51,7 @@ var firstEntityValue = function (entities, entity) {
 }
 
 
-var actions = {
+let actions = {
     send(request, response) {
         const {sessionId, context, entities} = request;
         const {text, quickreplies} = response;
@@ -75,12 +75,12 @@ var actions = {
 
     findEscapeRoom({context, entities}) {
         return new Promise(function (resolve, reject) {
-            var location = firstEntityValue(entities, 'location');
+            let location = firstEntityValue(entities, 'location');
             if(location) {
                 DB.location_cleanup(location, function (cleaned_location) {
                     context.location = cleaned_location;
 
-                    var num_of_people = firstEntityValue(entities, 'math_expression');
+                    let num_of_people = firstEntityValue(entities, 'math_expression');
                     if (cleaned_location) {
                         console.log("wit received: " + location);
                         console.log("wit received: " + num_of_people);
@@ -107,9 +107,9 @@ const wit = new Wit({
 });
 
 
-var read = function (sender, message) {
+function read(sender, message) {
     // Let's find the user
-    var sessionId = findOrCreateSession(sender);
+    let sessionId = findOrCreateSession(sender);
     // Let's forward the message to the Wit.ai bot engine
     // This will run all actions until there are no more actions left to do
     wit.runActions(
@@ -129,13 +129,13 @@ var read = function (sender, message) {
     .
     catch((err) => {
         console.error('Oops! Got an error from Wit: ', err.stack || err);
-    var context = sessions[sessionId].context;
+    let context = sessions[sessionId].context;
     generateErrorMsg(context, function (error_msg) {
-        var recepient_id = sessions[sessionId].fbid;
+        let recepient_id = sessions[sessionId].fbid;
         FB.newMessage(recepient_id, error_msg);
     });
 })
-};
+}
 
 function easterEggs(message, callback) {
     if (message == "אוינק") {
@@ -172,31 +172,32 @@ function findRoomsByCompany(message,callback) {
 }
 
 function createRoomsList(response) {
-    var list = [];
-    if(response) {
-        for (var i = 0; i < response.length; i++) {
-            var url_button = new Object();
-            url_button.title = 'הזמנ/י';
-            url_button.type = 'web_url';
-            url_button.url = response[i].website || "";
-            url_button.messenger_extensions = false;
-            url_button.webview_height_ratio = 'tall';
+    let list = [];
+    if (response) {
+        for (let i = 0; i < response.length; i++) {
+            let url_button = {
+                    title: 'הזמנ/י',
+                    type: 'web_url',
+                    url: response[i].website || "",
+                    messenger_extensions: false,
+                    webview_height_ratio: 'tall'
+                },
+                buttons = [url_button],
+                default_action = {
+                    type: 'web_url',
+                    url: response[i].website || "",
+                    messenger_extensions: false,
+                    webview_height_ratio: 'tall'
+                },
 
-            var buttons = [];
-            buttons.push(url_button);
+                element = {
+                    title: response[i].room_name,
+                    subtitle: response[i].address + "\n" + " טל׳: " + response[i].phone,
+                    buttons: buttons,
+                    default_action: default_action
 
-            var default_action = new Object();
-            default_action.type = 'web_url';
-            default_action.url = response[i].website || "";
-            default_action.messenger_extensions = false;
-            default_action.webview_height_ratio = 'tall';
+                };
 
-            var element = new Object();
-
-            element.title = response[i].room_name;
-            element.subtitle = response[i].address + "\n" + " טל׳: " + response[i].phone;
-            element.buttons = buttons;
-            element.default_action = default_action;
             list.push(element)
         }
     }
@@ -207,7 +208,7 @@ function generateErrorMsg(context, callback) {
     if(context.location) {
         DB.findErrorMessage('location', function (response) {
             if (response) {
-                var msg = response[0].A.replace('<>', context.location);
+                let msg = response[0].A.replace('<>', context.location);
                 return callback(msg);
             } else {
                 return callback('לא הבנתי את כוונתך, אנא נסה שוב');
