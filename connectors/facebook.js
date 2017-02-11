@@ -1,10 +1,10 @@
 'use strict'
 
-var request = require('request');
-var Config = require('../config');
+const request = require('request');
+const Config = require('../config');
 
 // SETUP A REQUEST TO FACEBOOK SERVER
-var newRequest = request.defaults({
+const newRequest = request.defaults({
 	uri: 'https://graph.facebook.com/v2.6/me/messages',
 	method: 'POST',
 	json: true,
@@ -17,8 +17,8 @@ var newRequest = request.defaults({
 });
 
 // SETUP A MESSAGE FOR THE FACEBOOK REQUEST
-var newMessage = function (recipientId, msg,elements, cb) {
-	var opts = {
+function newMessage(recipientId, msg,elements, cb) {
+	let opts = {
 		form: {
 			recipient: {
 				id: recipientId
@@ -27,9 +27,9 @@ var newMessage = function (recipientId, msg,elements, cb) {
 	};
 
 
-
+	let message = "";
 	if (elements && elements.length > 0) {
-		var message = {
+		 message = {
 			attachment: {
 				type: 'template',
 				payload: {
@@ -39,7 +39,7 @@ var newMessage = function (recipientId, msg,elements, cb) {
 			}
 		};
 	} else {
-		var message = {
+		message = {
 			text: msg
 		}
 	}
@@ -50,12 +50,12 @@ var newMessage = function (recipientId, msg,elements, cb) {
 			cb(err || data.error && data.error.message, data)
 		}
 	})
-};
+}
 
 // PARSE A FACEBOOK MESSAGE to get user, message body, or attachment
 // https://developers.facebook.com/docs/messenger-platform/webhook-reference
-var getMessageEntry = function (body) {
-	var val = body.object === 'page' &&
+ function getMessageEntry (body) {
+	let val = body.object === 'page' &&
 						body.entry &&
 						Array.isArray(body.entry) &&
 						body.entry.length > 0 &&
@@ -65,7 +65,7 @@ var getMessageEntry = function (body) {
 						body.entry[0].messaging.length > 0 &&
 						body.entry[0].messaging[0];
 	return val || null
-};
+}
 
 module.exports = {
 	newRequest: newRequest,
