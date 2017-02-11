@@ -67,7 +67,7 @@ let actions = {
                 });
             }
 
-            return resolve();
+            return resolve(context);
             });
 
     },
@@ -89,10 +89,10 @@ let actions = {
                             context.room_list = createRoomsList(response);
                             return resolve(context);
 
-                        }).catch(function (err) {
-                            return reject(err);
                         })
                     }
+                }).catch(function (err) {
+                    return reject(err);
                 });
             } else {
                 return resolve(context)
@@ -130,8 +130,8 @@ function read(sender, message) {
 }).catch((err) => {
         console.error('Oops! Got an error from Wit: ', err.stack || err);
     let context = sessions[sessionId].context;
-    generateErrorMsg(context, function (error_msg) {
-        let recepient_id = sessions[sessionId].fbid;
+    generateErrorMsg(context).then( function (error_msg) {
+        let recepient_id = context.fbid;
         FB.newMessage(recepient_id, error_msg);
     });
 })
