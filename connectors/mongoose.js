@@ -331,6 +331,7 @@ function nop_cleanup(number_of_people) {
 
 }
 
+
 function getRandomDocIndices(num_of_rooms, total) {
     let arr = [];
     while(arr.length < Math.min(total,num_of_rooms)){
