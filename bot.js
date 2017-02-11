@@ -61,13 +61,12 @@ let actions = {
             if(context.room_list && context.room_list.length > 0) {
                 FB.newMessage(recipientId,"", context.room_list);
             } else {
-
                 generateErrorMsg(context).then( function (error_msg) {
                     FB.newMessage(recipientId, error_msg);
                 });
             }
 
-            return resolve(context);
+            return resolve();
             });
 
     },
@@ -131,7 +130,7 @@ function read(sender, message) {
         console.error('Oops! Got an error from Wit: ', err.stack || err);
     let context = sessions[sessionId].context;
     generateErrorMsg(context).then( function (error_msg) {
-        let recepient_id = context.fbid;
+        let recepient_id = context._fbid_;
         FB.newMessage(recepient_id, error_msg);
     });
 })

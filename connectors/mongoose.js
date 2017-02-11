@@ -87,13 +87,13 @@ function findRoomInDb(location, num_of_people) {
 
                         chooseNDocs(docs).then(result =>
                         resolve(result))
+                    } else {
+                        resolve(undefined)
                     }
-                    resolve(undefined)
-
                 })
             }).catch(function (err) {
                 if (err) {
-                    reject(err.message, "Failed to get rooms.");
+                    reject(undefined);
                 }
             });
         });
@@ -288,6 +288,8 @@ function nop_cleanup(number_of_people) {
                     case number_of_people.indexOf("שישיה") > -1:
                     case number_of_people.indexOf("שישייה") > -1:
                     case number_of_people.substr(1) === '6':
+                        return resolve(6);
+                        break;
 
                     case number_of_people.indexOf("שבע") > -1:
                     case number_of_people.indexOf("שביעיה") > -1:
