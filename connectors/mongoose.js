@@ -258,6 +258,7 @@ function nop_cleanup(number_of_people) {
                     case number_of_people.indexOf("שני") > -1:
                     case number_of_people.indexOf("שתי") > -1:
                     case number_of_people.indexOf("זוג") > -1:
+                    case number_of_people.indexOf("זוגות") > -1:
                     case number_of_people.substr(1) === '2':
                         return resolve(2);
                         break;
