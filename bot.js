@@ -11,30 +11,23 @@ const FB = require('./connectors/facebook');
 const sessions = {};
 
 function findOrCreateSession(fbid) {
-    let sessionId;
+    return new Promise(
+        function (resolve, reject) {
 
-    // DOES USER SESSION ALREADY EXIST?
-    Object.keys(sessions).forEach(k => {
-        if (sessions[k].fbid === fbid
-    )
-    {
-        // YUP
-        sessionId = k
-    }
-});
+            let sessionId = fbid;
 
-    // No session so we will create one
-    if (!sessionId) {
-        sessionId = new Date().toISOString();
-        sessions[sessionId] = {
-            fbid: fbid,
-            context: {
-                _fbid_: fbid
+            // No session so we will create one
+            if (!sessions[sessionId]) {
+                sessions[sessionId] = {
+                    fbid: fbid,
+                    context: {
+                        _fbid_: fbid
+                    }
+                }
             }
-        }
-    }
 
-    return sessionId
+            return resolve(sessionId);
+        });
 }
 
 function firstEntityValue(entities, entity) {
@@ -58,16 +51,21 @@ let actions = {
         return new Promise(function (resolve, reject) {
             const recipientId = sessions[sessionId].fbid;
 
-            if(context.room_list && context.room_list.length > 0) {
-                FB.newMessage(recipientId,"", context.room_list);
+            if (context.room_list && context.room_list.length > 0) {
+                displayResponse(recipientId, context)
             } else {
-                generateErrorMsg(context).then( function (error_msg) {
-                    FB.newMessage(recipientId, error_msg);
+                delete context.location;
+                generateErrorMsg(context).then(error_msg => {
+                    FB.newSimpleMessage(recipientId, error_msg).then(res => {
+                        FB.newSimpleMessage(recipientId, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
+                            drawMenu(recipientId, context);
+                        });
+                    });
                 });
             }
-
-            return resolve();
-            });
+            sessions[sessionId].context = context;
+            return resolve(context);
+        });
 
     },
 
@@ -75,27 +73,22 @@ let actions = {
     findEscapeRoom({context, entities}) {
         return new Promise(function (resolve,reject) {
             let location = firstEntityValue(entities, 'location');
+            let num_of_people = firstEntityValue(entities, 'math_expression');
+
+            console.log("wit received: " + location);
+            console.log("wit received: " + num_of_people);
+
+
+
             if(location) {
-                DB.location_cleanup(location).then(function (cleaned_location) {
-                    context.location = cleaned_location;
-
-                    let num_of_people = firstEntityValue(entities, 'math_expression');
-                    if (cleaned_location) {
-                        console.log("wit received: " + location);
-                        console.log("wit received: " + num_of_people);
-
-                        DB.findRoomInDb(location, num_of_people).then(function (response) {
-                            context.room_list = createRoomsList(response);
-                            return resolve(context);
-
-                        })
-                    }
-                }).catch(function (err) {
-                    return reject(err);
-                });
-            } else {
-                return resolve(context)
+                context.location = location;
             }
+            if(num_of_people){
+                context.num_of_people = num_of_people;
+            }
+
+            return resolve(findEscapeRoomByContext(context))
+
         });
     }
 };
@@ -109,31 +102,37 @@ const wit = new Wit({
 
 
 function read(sender, message) {
-    // Let's find the user
-    let sessionId = findOrCreateSession(sender);
-    // Let's forward the message to the Wit.ai bot engine
-    // This will run all actions until there are no more actions left to do
-    wit.runActions(
-        sessionId, // the user's current session
-        message, // the user's message
-        sessions[sessionId].context // the user's current session state
-    ).then((context) => {
-        delete context.location;
-        delete context.room_list;
-        // Our bot did everything it has to do.
-        // Now it's waiting for further messages to proceed.
-        console.log('Waiting for next user messages');
+    return new Promise(
+        function (resolve, reject) {
 
-    // Updating the user's current session state
-    sessions[sessionId].context = context;
-}).catch((err) => {
-        console.error('Oops! Got an error from Wit: ', err.stack || err);
-    let context = sessions[sessionId].context;
-    generateErrorMsg(context).then( function (error_msg) {
-        let recepient_id = context._fbid_;
-        FB.newMessage(recepient_id, error_msg);
-    });
-})
+            // Let's find the user
+            findOrCreateSession(sender).then(sessionId => {
+
+                // Let's forward the message to the Wit.ai bot engine
+                // This will run all actions until there are no more actions left to do
+                wit.runActions(
+                    sessionId, // the user's current session
+                    message, // the user's message
+                    sessions[sessionId].context // the user's current session state
+                ).then((context) => {
+                    // delete context.location;
+                    // delete context.room_list;
+                    // Our bot did everything it has to do.
+                    // Now it's waiting for further messages to proceed.
+                    console.log('Waiting for next user messages');
+
+                    // Updating the user's current session state
+                    // sessions[sessionId].context = context;
+                    return resolve()
+                }).catch((err) => {
+                    console.error('Oops! Got an error from Wit: ', err.stack || err);
+                    FB.newSimpleMessage(sender, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
+                        let menu = createGeneralMenu(sender);
+                        FB.newStructuredMessage(sender, menu);
+                    })
+                })
+            });
+        });
 }
 
 function easterEggs(message) {
@@ -188,6 +187,20 @@ function findRoomsByCompany(message) {
         });
 }
 
+function findEscapeRoomByContext(context) {
+        return new Promise(
+            function (resolve, reject) {
+                DB.findRoomInDb(context).then(response => {
+                    context.room_list = createRoomsList(response);
+                    return resolve(context);
+
+                }).catch(function (err) {
+                    return reject(err);
+                });
+            });
+    }
+
+
 function createRoomsList(response) {
     let list = [];
     if (response) {
@@ -199,7 +212,12 @@ function createRoomsList(response) {
                     messenger_extensions: false,
                     webview_height_ratio: 'tall'
                 },
-                buttons = [url_button],
+                info_button = {
+                    title: 'עוד מידע',
+                    type: 'postback',
+                    payload: "MORE_INFO_" +  response[i].room_name
+                },
+                buttons = [url_button,info_button],
                 default_action = {
                     type: 'web_url',
                     url: response[i].website || "",
@@ -220,6 +238,67 @@ function createRoomsList(response) {
     }
     return list
 }
+
+function createMenuItem(title, payload) {
+    let postback_button = {
+            title: title,
+            type: 'postback',
+            payload: payload
+        }, buttons = [postback_button],
+
+        element = {
+            title: title,
+            buttons: buttons,
+        };
+
+    return element;
+}
+
+function createMenu(data){
+    let list = [];
+    if (data) {
+        for(let key in data){
+            list.push(createMenuItem(key,data[key]));
+        }
+    }
+    return list
+}
+
+function createQuickReply(title,payload){
+    return {
+        content_type:"text",
+        title: title,
+        payload: payload
+    }
+}
+
+function createQuickReplies(data){
+    if(data) {
+
+        let replies_list = [];
+        for (let key in data) {
+            replies_list.push(createQuickReply(key, data[key]))
+        }
+
+        return replies_list;
+    } else return undefined;
+}
+
+function createGeneralMenu(sessionID) {
+    let context = sessions[sessionID];
+    let data = {};
+    // data["חיפוש לפי שם חדר"] = "SEARCH_BY_ROOM_NAME";
+    // data["חיפוש לפי חברה של חדרים"] = "SEARCH_BY_COMPANY";
+    if (!context.location) {
+        data["חיפוש לפי מיקום"] = "SEARCH_BY_LOCATION";
+    }
+    if (!context.num_of_people || context.num_of_people < 2) {
+        data["חיפוש לפי גודל קבוצה"] = "SEARCH_BY_GROUP_SIZE";
+    }
+    data["חיפוש חדש"] = "NEW_SEARCH";
+    return createMenu(data);
+}
+
 
 function generateErrorMsg(context) {
     return new Promise(
@@ -244,11 +323,65 @@ function generateErrorMsg(context) {
         });
 }
 
+function drawMenu(recipient,context) {
+    return new Promise(
+        function (resolve) {
+            let menu = createGeneralMenu(recipient);
+            FB.newStructuredMessage(recipient, menu);
+            return resolve(menu)
+        });
+}
+function displayResponse(recipient, context) {
+    let msg = "הנה רשימה של חדרים ";
+
+    if (context.location) {
+        msg += "ב" + context.location;
+    } else msg += " בכל הארץ ";
+    if (context.num_of_people && !(context.num_of_people === 1)) {
+        msg += " ל" + context.num_of_people + " אנשים"
+    }
+    FB.newSimpleMessage(recipient, msg).then(r => {
+
+        FB.newStructuredMessage(recipient, context.room_list).then(r => {
+            FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש או להתחיל חיפוש חדש:").then(r => {
+                FB.newStructuredMessage(recipient,createGeneralMenu(context));
+            })
+        })
+    })
+}
+
+function handleMoreInfo(recipient,room_name){
+    return new Promise(
+        function (resolve) {
+            findOrCreateSession(recipient).then(sessionId => {
+
+                let context = sessions[sessionId].context;
+                context.room_name = room_name;
+                let msg = "בקרוב אתן מידע מפורט על החדר " + room_name;
+                FB.newSimpleMessage(recipient,msg);
+                resolve(context)
+            });
+
+
+
+            });
+}
+
+
 
 module.exports = {
+    sessions: sessions,
     findOrCreateSession: findOrCreateSession,
     read: read,
     easterEggs: easterEggs,
     findRoomByName: findRoomByName,
-    findRoomsByCompany: findRoomsByCompany
+    findRoomsByCompany: findRoomsByCompany,
+    findEscapeRoomByContext: findEscapeRoomByContext,
+    createQuickReplies: createQuickReplies,
+    createMenu: createMenu,
+    createGeneralMenu: createGeneralMenu,
+    drawMenu: drawMenu,
+    displayResponse: displayResponse,
+    handleMoreInfo: handleMoreInfo
 };
+

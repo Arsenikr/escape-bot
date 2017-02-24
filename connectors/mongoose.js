@@ -63,19 +63,22 @@ function chooseNDocs(docs,num_of_docs_to_choose) {
         });
 }
 
-function findRoomInDb(location, num_of_people) {
+function findRoomInDb(context) {
     return new Promise(
         function (resolve, reject) {
 
-            let cloc_promise = location_cleanup(location);
-            let cnop_promise = nop_cleanup(num_of_people);
+            let cloc_promise = location_cleanup(context.location);
+            let cnop_promise = nop_cleanup(context.num_of_people);
 
             Promise.all([cloc_promise, cnop_promise]).then(values => {
                 let cleaned_location = values[0];
                 let cleaned_nop = values[1];
+                context.location = cleaned_location;
+                context.num_of_people = cleaned_nop;
                 console.log(cleaned_nop);
-
-                EscapeRoom.find({'$and': [{'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}, {"region_2": {'$regex': cleaned_location}}]}, {"max_players": {'$gt': cleaned_nop}}]}, {
+                let loc_query = {};
+                if(cleaned_location) loc_query = {'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}, {"region_2": {'$regex': cleaned_location}}]};
+                EscapeRoom.find({'$and': [loc_query, {"max_players": {'$gt': cleaned_nop}}]}, {
                     'room_name': true,
                     'company_name': true,
                     'website': true,
@@ -243,10 +246,15 @@ function findErrorMessage(message_type) {
 function location_cleanup(location) {
     return new Promise(
         function (resolve) {
-            if (location.charAt(0) === 'ב')
-                return resolve(location.substr(1));
-            else return resolve(location)
+            if(location) {
+                if (location.charAt(0) === 'ב')
+                    return resolve(location.substr(1));
+                else return resolve(location)
+            } else {
+                return resolve(undefined)
+            }
         });
+
 }
 
 function nop_cleanup(number_of_people) {
