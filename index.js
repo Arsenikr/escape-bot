@@ -150,12 +150,13 @@ function askForGroupSize(recipient) {
 function resetSession(recipient) {
     Bot.findOrCreateSession(recipient).then(sessionid => {
 
-    let context = Bot.sessions[sessionid].context;
-    delete context.location;
-    delete context.num_of_people;
-    delete context.room_list;
-    let menu = Bot.createGeneralMenu(context);
-    FB.newStructuredMessage(recipient,menu)
+        let context = Bot.sessions[sessionid].context;
+        delete context.location;
+        delete context.num_of_people;
+        delete context.room_list;
+        Bot.createGeneralMenu(recipient).then(menu => {
+            FB.newStructuredMessage(recipient, menu)
+        })
     });
 }
 

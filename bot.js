@@ -14,17 +14,28 @@ function findOrCreateSession(fbid) {
     return new Promise(
         function (resolve, reject) {
 
-            let sessionId = fbid;
+            let sessionId;
 
-            // No session so we will create one
-            if (!sessions[sessionId]) {
-                sessions[sessionId] = {
-                    fbid: fbid,
-                    context: {
-                        _fbid_: fbid
-                    }
-                }
+    // DOES USER SESSION ALREADY EXIST?
+    Object.keys(sessions).forEach(k => {
+        if (sessions[k].fbid === fbid
+    )
+    {
+        // YUP
+        sessionId = k
+    }
+});
+
+    // No session so we will create one
+    if (!sessionId) {
+        sessionId = new Date().toISOString();
+        sessions[sessionId] = {
+            fbid: fbid,
+            context: {
+                _fbid_: fbid
             }
+        }
+    }
 
             return resolve(sessionId);
         });
@@ -54,7 +65,6 @@ let actions = {
             if (context.room_list && context.room_list.length > 0) {
                 displayResponse(recipientId, context)
             } else {
-                delete context.location;
                 generateErrorMsg(context).then(error_msg => {
                     FB.newSimpleMessage(recipientId, error_msg).then(res => {
                         FB.newSimpleMessage(recipientId, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
@@ -64,7 +74,8 @@ let actions = {
                 });
             }
             sessions[sessionId].context = context;
-            return resolve(context);
+            // DO NOT RETURN CONTEXT
+            return resolve();
         });
 
     },
@@ -127,8 +138,9 @@ function read(sender, message) {
                 }).catch((err) => {
                     console.error('Oops! Got an error from Wit: ', err.stack || err);
                     FB.newSimpleMessage(sender, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
-                        let menu = createGeneralMenu(sender);
-                        FB.newStructuredMessage(sender, menu);
+                        createGeneralMenu(sender).then(menu => {
+                            FB.newStructuredMessage(sender, menu);
+                        })
                     })
                 })
             });
@@ -284,19 +296,25 @@ function createQuickReplies(data){
     } else return undefined;
 }
 
-function createGeneralMenu(sessionID) {
-    let context = sessions[sessionID];
-    let data = {};
-    // data["חיפוש לפי שם חדר"] = "SEARCH_BY_ROOM_NAME";
-    // data["חיפוש לפי חברה של חדרים"] = "SEARCH_BY_COMPANY";
-    if (!context.location) {
-        data["חיפוש לפי מיקום"] = "SEARCH_BY_LOCATION";
-    }
-    if (!context.num_of_people || context.num_of_people < 2) {
-        data["חיפוש לפי גודל קבוצה"] = "SEARCH_BY_GROUP_SIZE";
-    }
-    data["חיפוש חדש"] = "NEW_SEARCH";
-    return createMenu(data);
+function createGeneralMenu(recipient) {
+    return new Promise(
+        function (resolve, reject) {
+
+            findOrCreateSession(recipient).then(sessionId => {
+                let context = sessions[sessionId].context;
+                let data = {};
+                // data["חיפוש לפי שם חדר"] = "SEARCH_BY_ROOM_NAME";
+                // data["חיפוש לפי חברה של חדרים"] = "SEARCH_BY_COMPANY";
+                if (!context.location) {
+                    data["חיפוש לפי מיקום"] = "SEARCH_BY_LOCATION";
+                }
+                if (!context.num_of_people || context.num_of_people < 2) {
+                    data["חיפוש לפי גודל קבוצה"] = "SEARCH_BY_GROUP_SIZE";
+                }
+                data["חיפוש חדש"] = "NEW_SEARCH";
+                return resolve(createMenu(data));
+            });
+        });
 }
 
 
@@ -326,9 +344,10 @@ function generateErrorMsg(context) {
 function drawMenu(recipient,context) {
     return new Promise(
         function (resolve) {
-            let menu = createGeneralMenu(recipient);
+            createGeneralMenu(recipient).then(menu => {
             FB.newStructuredMessage(recipient, menu);
             return resolve(menu)
+            })
         });
 }
 function displayResponse(recipient, context) {
@@ -344,7 +363,9 @@ function displayResponse(recipient, context) {
 
         FB.newStructuredMessage(recipient, context.room_list).then(r => {
             FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש או להתחיל חיפוש חדש:").then(r => {
-                FB.newStructuredMessage(recipient,createGeneralMenu(context));
+                createGeneralMenu(recipient).then(menu => {
+                    FB.newStructuredMessage(recipient,menu);
+                })
             })
         })
     })

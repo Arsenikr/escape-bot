@@ -96,7 +96,7 @@ function findRoomInDb(context) {
                 })
             }).catch(function (err) {
                 if (err) {
-                    reject(undefined);
+                    reject(err);
                 }
             });
         });
@@ -262,80 +262,76 @@ function nop_cleanup(number_of_people) {
         function (resolve) {
 
             if (number_of_people) {
-                switch(true){
-                    case number_of_people.indexOf("שני") > -1:
-                    case number_of_people.indexOf("שתי") > -1:
-                    case number_of_people.indexOf("זוג") > -1:
-                    case number_of_people.indexOf("זוגות") > -1:
-                    case number_of_people.substr(1) === '2':
-                        return resolve(2);
-                        break;
+                if(!isNaN(number_of_people)){
+                    return resolve(number_of_people);
+                } else {
+                    switch (true) {
+                        case number_of_people.indexOf("שני") > -1:
+                        case number_of_people.indexOf("שתי") > -1:
+                        case number_of_people.indexOf("זוג") > -1:
+                        case number_of_people.indexOf("זוגות") > -1:
+                            return resolve(2);
+                            break;
 
-                    case number_of_people.indexOf("שלוש") > -1:
-                    case number_of_people.indexOf("שלישיה") > -1:
-                    case number_of_people.substr(1) === '3':
-                        return resolve(3);
-                        break;
+                        case number_of_people.indexOf("שלוש") > -1:
+                        case number_of_people.indexOf("שלישיה") > -1:
+                            return resolve(3);
+                            break;
 
-                    case number_of_people.indexOf("ארבע") > -1:
-                    case number_of_people.indexOf("רביעיה") > -1:
-                    case number_of_people.indexOf("רביעייה") > -1:
-                    case number_of_people.substr(1) === '4':
-                        return resolve(4);
-                        break;
+                        case number_of_people.indexOf("ארבע") > -1:
+                        case number_of_people.indexOf("רביעיה") > -1:
+                        case number_of_people.indexOf("רביעייה") > -1:
+                            return resolve(4);
+                            break;
 
-                    case number_of_people.indexOf("חמש") > -1:
-                    case number_of_people.indexOf("חמישה") > -1:
-                    case number_of_people.indexOf("חמישיה") > -1:
-                    case number_of_people.indexOf("חמישייה") > -1:
-                    case number_of_people.substr(1) === '5':
-                        return resolve(5);
-                        break;
+                        case number_of_people.indexOf("חמש") > -1:
+                        case number_of_people.indexOf("חמישה") > -1:
+                        case number_of_people.indexOf("חמישיה") > -1:
+                        case number_of_people.indexOf("חמישייה") > -1:
+                            return resolve(5);
+                            break;
 
-                    case number_of_people.indexOf("שש") > -1:
-                    case number_of_people.indexOf("שישה") > -1:
-                    case number_of_people.indexOf("שישיה") > -1:
-                    case number_of_people.indexOf("שישייה") > -1:
-                    case number_of_people.substr(1) === '6':
-                        return resolve(6);
-                        break;
+                        case number_of_people.indexOf("שש") > -1:
+                        case number_of_people.indexOf("שישה") > -1:
+                        case number_of_people.indexOf("שישיה") > -1:
+                        case number_of_people.indexOf("שישייה") > -1:
+                            return resolve(6);
+                            break;
 
-                    case number_of_people.indexOf("שבע") > -1:
-                    case number_of_people.indexOf("שביעיה") > -1:
-                    case number_of_people.indexOf("שביעייה") > -1:
-                    case number_of_people.substr(1) === '7':
-                        return resolve(7);
-                        break;
+                        case number_of_people.indexOf("שבע") > -1:
+                        case number_of_people.indexOf("שביעיה") > -1:
+                        case number_of_people.indexOf("שביעייה") > -1:
+                            return resolve(7);
+                            break;
 
-                    case number_of_people.indexOf("שמונה") > -1:
-                    case number_of_people.indexOf("שמיניה") > -1:
-                    case number_of_people.indexOf("שמינייה") > -1:
-                    case number_of_people.substr(1) === '8':
-                        return resolve(8);
-                        break;
+                        case number_of_people.indexOf("שמונה") > -1:
+                        case number_of_people.indexOf("שמיניה") > -1:
+                        case number_of_people.indexOf("שמינייה") > -1:
+                            return resolve(8);
+                            break;
 
-                    case number_of_people.indexOf("תשע") > -1:
-                    case number_of_people.indexOf("תשיעיה") > -1:
-                    case number_of_people.indexOf("תשיעייה") > -1:
-                    case number_of_people.substr(1) === '9':
-                        return resolve(9);
-                        break;
+                        case number_of_people.indexOf("תשע") > -1:
+                        case number_of_people.indexOf("תשיעיה") > -1:
+                        case number_of_people.indexOf("תשיעייה") > -1:
+                            return resolve(9);
+                            break;
 
-                    case number_of_people.indexOf("עשר") > -1:
-                    case number_of_people.indexOf("עשיריה") > -1:
-                    case number_of_people.indexOf("עשירייה") > -1:
-                    case number_of_people.substr(1) === '10':
-                        return resolve(10);
-                        break;
+                        case number_of_people.indexOf("עשר") > -1:
+                        case number_of_people.indexOf("עשיריה") > -1:
+                        case number_of_people.indexOf("עשירייה") > -1:
+                            return resolve(10);
+                            break;
 
-                    default:
-                    return resolve(1);
-                    break;
+                        default:
+                            return resolve(1);
+                            break;
 
+                    }
                 }
             } else {
                 return resolve(1);
             }
+
         });
 
 }
