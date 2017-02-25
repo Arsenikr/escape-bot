@@ -95,10 +95,10 @@ function sendStartMessages(entry,profile) {
             message = "אתה יכול לשאול אותי מידע על חדרים, ולחפש חדרים על פי קריטריונים שונים"
         }
         FB.newSimpleMessage(recipient, message).then(resp => {
-            FB.newSimpleMessage("בואו נתחיל!")
-        }).then(r => {
-            Bot.drawMenu(context, recipient).then(res => {
-                Bot.sessions[sessionid].context.is_started = true;
+            FB.newSimpleMessage(recipient,"בואו נתחיל!").then(r => {
+                Bot.drawMenu(recipient, context).then(res => {
+                    Bot.sessions[sessionid].context.is_started = true;
+                })
             });
         })
 
@@ -154,6 +154,7 @@ function resetSession(recipient) {
         delete context.location;
         delete context.num_of_people;
         delete context.room_list;
+        delete context.room_id;
         Bot.createGeneralMenu(recipient).then(menu => {
             FB.newStructuredMessage(recipient, menu)
         })

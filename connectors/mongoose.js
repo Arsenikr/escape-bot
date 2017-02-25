@@ -14,6 +14,7 @@ mongoose.connect(Config.MONGODB_URL, function (error) {
 
 const Schema = mongoose.Schema;
 const EscapeRoomsSchema = new Schema({
+    room_id: Number,
     room_name: String,
     company_name: String,
     location: String,
@@ -22,7 +23,47 @@ const EscapeRoomsSchema = new Schema({
     website: String,
     phone: String,
     phone_2: String,
-    address: String
+    address: String,
+    latitude: Number,
+    longitude: Number,
+    number_of_same_rooms: Number,
+    soldier_discount: Number,
+    soldier_discount_weekend: Number,
+    student_discount: Number,
+    student_discount_weekend: Number,
+    children_discount: Number ,
+    children_discount_weekend: Number,
+    is_gift_card: Number,
+    escape_card: Number,
+    birthday_discount: Number,
+    is_linear: Number,
+    is_parallel: Number,
+    is_beginner: Number,
+    is_for_children: Number,
+    is_for_religious: Number,
+    is_scary: Number,
+    is_for_disabled: Number,
+    is_for_hearing_impaired: Number,
+    is_for_pregnant: Number,
+    is_credit_card_accepted: Number,
+    price_1: Number,
+    price_2: Number,
+    price_3: Number,
+    price_4: Number,
+    price_5: Number,
+    price_6: Number,
+    price_7: Number,
+    price_8: Number,
+    price_9: Number,
+    weekend_price_1: Number,
+    weekend_price_2: Number,
+    weekend_price_3: Number,
+    weekend_price_4: Number,
+    weekend_price_5: Number,
+    weekend_price_6: Number,
+    weekend_price_7: Number,
+    weekend_price_8: Number,
+    weekend_price_9: Number
 });
 
 // Mongoose Model definition
@@ -79,6 +120,7 @@ function findRoomInDb(context) {
                 let loc_query = {};
                 if(cleaned_location) loc_query = {'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}, {"region_2": {'$regex': cleaned_location}}]};
                 EscapeRoom.find({'$and': [loc_query, {"max_players": {'$gt': cleaned_nop}}]}, {
+                    'room_id': true,
                     'room_name': true,
                     'company_name': true,
                     'website': true,
@@ -110,6 +152,7 @@ function findRoomByName(room_name) {
             console.log("trying to find by name: " + room_name);
 
             EscapeRoom.find({"room_name": {'$regex': room_name, '$options': 'i'}}, {
+                'room_id': true,
                 'room_name': true,
                 'company_name': true,
                 'website': true,
@@ -137,6 +180,7 @@ function findRoomsByCompany(company_name) {
             console.log("trying to find by company: " + company_name);
 
             EscapeRoom.find({"company_name": new RegExp('^' + company_name, 'i')}, {
+                'room_id': true,
                 'room_name': true,
                 'company_name': true,
                 'website': true,
@@ -150,11 +194,33 @@ function findRoomsByCompany(company_name) {
                         resolve(result))
                 } else return resolve(undefined)
 
-            }).catch( function (err) {
+            }).catch(function (err) {
                 return reject(err);
             });
         });
 }
+
+
+    function findRoomById(room_id) {
+        return new Promise(
+            function (resolve, reject) {
+
+                console.log("trying to find by id: " + room_id);
+                EscapeRoom.find({"room_id": parseInt(room_id)}).then(function (docs) {
+                    if (docs && docs[0]) {
+                        resolve(docs[0])
+                    } else {
+                        let msg = 'could not find a room with id: ' + room_id;
+                        console.log(msg);
+                        return reject(msg)
+                    }
+                }).catch(function (err) {
+                    return reject(err);
+                });
+            });
+
+    }
+
 
 function populateEasterEggsCache() {
     return new Promise(
@@ -354,6 +420,7 @@ module.exports = {
     location_cleanup: location_cleanup,
     findRoomsByCompany: findRoomsByCompany,
     findEasterEgg: findEasterEgg,
+    findRoomById: findRoomById,
     findErrorMessage: findErrorMessage
 
 };

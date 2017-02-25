@@ -83,6 +83,7 @@ function newSimpleMessage(recipientId, msg,quick_replies) {
                             type: 'template',
                             payload: {
                                 template_type: 'generic',
+                                image_aspect_ratio: 'horizontal',
                                 elements: elements
                             }
                         }
