@@ -126,7 +126,9 @@ function findRoomInDb(context) {
                     'website': true,
                     'phone': true,
                     'phone_2': true,
-                    'address': true
+                    'address': true,
+                    'latitude': true,
+                    'longitude': true
                 }).then(function (docs) {
                     if (docs && docs.length > 0) {
 
@@ -158,7 +160,9 @@ function findRoomByName(room_name) {
                 'website': true,
                 'phone': true,
                 'phone2': true,
-                'address': true
+                'address': true,
+                'latitude': true,
+                'longitude': true
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
                     chooseNDocs(docs).then(result =>
@@ -186,7 +190,9 @@ function findRoomsByCompany(company_name) {
                 'website': true,
                 'phone': true,
                 'phone2': true,
-                'address': true
+                'address': true,
+                'latitude': true,
+                'longitude': true
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
                     console.log("found " + docs.length + "rooms");

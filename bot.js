@@ -5,6 +5,7 @@ const emoji = require('node-emoji');
 const Wit = require('node-wit').Wit;
 const DB = require('./connectors/mongoose');
 const FB = require('./connectors/facebook');
+const TinyURL = require('tinyurl');
 
 
 // LETS SAVE USER SESSIONS
@@ -215,8 +216,12 @@ function findEscapeRoomByContext(context) {
 
 function createRoomsList(response) {
     let list = [];
+
     if (response) {
         for (let i = 0; i < response.length; i++) {
+            TinyURL.shorten('waze://?ll='+ response[i].latitude +',' +response[i].longitude + '&navigate=yes', function(wazelink) {
+                console.log(wazelink);
+
             let url_button = {
                     title: 'הזמנ/י',
                     type: 'web_url',
@@ -229,7 +234,12 @@ function createRoomsList(response) {
                     type: 'postback',
                     payload: "MORE_INFO_" +  response[i].room_id
                 },
-                buttons = [info_button,url_button],
+                nav_button = {
+                    title: 'נווט עם waze',
+                    type: 'web_url',
+                    url: wazelink
+                },
+                buttons = [url_button,info_button,nav_button],
                 default_action = {
                     type: 'web_url',
                     url: response[i].website || "",
@@ -246,6 +256,7 @@ function createRoomsList(response) {
                 };
 
             list.push(element)
+            });
         }
     }
     return list
@@ -272,7 +283,7 @@ function createMenuItem(title, payload,image_url) {
 
 function createMapItem(address) {
     return {
-        title: "לינק לניווט",
+        title: "מפה:",
         image_url: "https:\/\/maps.googleapis.com\/maps\/api\/staticmap?size=764x400&center=" + encodeURI(address) + "&zoom=16&language=he&markers=size:mid%7Ccolor:0xff0000%7Clabel:1%7C" + encodeURI(address),
         item_url: "https:\/\/www.google.com\/maps\/place\/" + address
     }
