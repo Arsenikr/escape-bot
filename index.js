@@ -97,7 +97,7 @@ function sendStartMessages(entry,profile) {
         FB.newSimpleMessage(recipient, message).then(resp => {
             FB.newSimpleMessage(recipient,"בואו נתחיל!").then(r => {
                 Bot.drawMenu(recipient, context).then(res => {
-                    Bot.sessions[sessionid].context.is_started = true;
+                    // Bot.sessions[sessionid].context.is_started = true;
                 })
             });
         })
