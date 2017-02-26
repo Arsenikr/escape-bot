@@ -219,8 +219,6 @@ function createRoomsList(response) {
 
     if (response) {
         for (let i = 0; i < response.length; i++) {
-            // TinyURL.shorten('waze://?ll='+ response[i].latitude +',' +response[i].longitude + '&navigate=yes', function(wazelink) {
-            //     console.log(wazelink);
 
             let url_button = {
                     title: 'הזמנ/י',
@@ -234,12 +232,12 @@ function createRoomsList(response) {
                     type: 'postback',
                     payload: "MORE_INFO_" +  response[i].room_id
                 },
-                // nav_button = {
-                //     title: 'נווט עם waze',
-                //     type: 'web_url',
-                //     url: wazelink
-                // },
-                buttons = [url_button,info_button],
+                nav_button = {
+                    title: 'נווט עם waze',
+                    type: 'web_url',
+                    url: response[i].waze_link
+                },
+                buttons = [url_button,info_button,nav_button],
                 default_action = {
                     type: 'web_url',
                     url: response[i].website || "",
@@ -256,7 +254,6 @@ function createRoomsList(response) {
                 };
 
             list.push(element);
-            // });
         }
     }
     return list
@@ -576,9 +573,25 @@ function handleMoreInfo(recipient, room_id) {
 }
 
 
+function generateWazeLink() {
+    return new Promise(
+        function (resolve) {
+            let links = [];
+            DB.findAllRooms().then(rooms => {
+                for (let i = 0; i < rooms.length; i++) {
+                    TinyURL.shorten('waze://?ll=' + rooms[i].latitude + ',' + rooms[i].longitude + '&navigate=yes', function (wazelink) {
+                        console.log(rooms[i].room_id + ": " + wazelink);
+                        links.push(wazelink);
+                    });
+                }
+                resolve(links);
+            })
+        });
+}
 
 
-module.exports = {
+
+    module.exports = {
     sessions: sessions,
     findOrCreateSession: findOrCreateSession,
     read: read,
@@ -591,6 +604,7 @@ module.exports = {
     createGeneralMenu: createGeneralMenu,
     drawMenu: drawMenu,
     displayResponse: displayResponse,
-    handleMoreInfo: handleMoreInfo
+    handleMoreInfo: handleMoreInfo,
+    generateWazeLink: generateWazeLink
 };
 

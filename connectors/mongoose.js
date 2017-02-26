@@ -26,6 +26,7 @@ const EscapeRoomsSchema = new Schema({
     address: String,
     latitude: Number,
     longitude: Number,
+    waze_link: String,
     number_of_same_rooms: Number,
     soldier_discount: Number,
     soldier_discount_weekend: Number,
@@ -130,7 +131,8 @@ function findRoomInDb(context) {
                     'phone_2': true,
                     'address': true,
                     'latitude': true,
-                    'longitude': true
+                    'longitude': true,
+                    'waze_link': true
                 }).then(function (docs) {
                     if (docs && docs.length > 0) {
 
@@ -164,11 +166,35 @@ function findRoomByName(room_name) {
                 'phone2': true,
                 'address': true,
                 'latitude': true,
-                'longitude': true
+                'longitude': true,
+                'waze_link': true
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
                     chooseNDocs(docs).then(result =>
                         resolve(result))
+                } else resolve(undefined)
+
+            }).catch( function (err) {
+                if(err){
+                    reject(err);
+                }
+            })
+        });
+}
+
+
+function findAllRooms() {
+    return new Promise(
+        function (resolve, reject) {
+
+
+            EscapeRoom.find({}, {
+                'room_id': true,
+                'latitude': true,
+                'longitude': true
+            }).then(function (docs) {
+                if (docs && docs.length > 0) {
+                        resolve(docs)
                 } else resolve(undefined)
 
             }).catch( function (err) {
@@ -194,7 +220,8 @@ function findRoomsByCompany(company_name) {
                 'phone2': true,
                 'address': true,
                 'latitude': true,
-                'longitude': true
+                'longitude': true,
+                'waze_link': true
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
                     console.log("found " + docs.length + "rooms");
@@ -429,6 +456,7 @@ module.exports = {
     findRoomsByCompany: findRoomsByCompany,
     findEasterEgg: findEasterEgg,
     findRoomById: findRoomById,
-    findErrorMessage: findErrorMessage
+    findErrorMessage: findErrorMessage,
+    findAllRooms: findAllRooms
 
 };

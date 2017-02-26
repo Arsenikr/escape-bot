@@ -231,3 +231,10 @@ app.post('/webhook', function (req, res) {
 
     });
 });
+
+app.get('/generatewaze', function (req, res) {
+    Bot.generateWazeLink().then(links => {
+        res.send(links)
+    })
+});
+
