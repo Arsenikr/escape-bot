@@ -219,8 +219,8 @@ function createRoomsList(response) {
 
     if (response) {
         for (let i = 0; i < response.length; i++) {
-            TinyURL.shorten('waze://?ll='+ response[i].latitude +',' +response[i].longitude + '&navigate=yes', function(wazelink) {
-                console.log(wazelink);
+            // TinyURL.shorten('waze://?ll='+ response[i].latitude +',' +response[i].longitude + '&navigate=yes', function(wazelink) {
+            //     console.log(wazelink);
 
             let url_button = {
                     title: 'הזמנ/י',
@@ -234,12 +234,12 @@ function createRoomsList(response) {
                     type: 'postback',
                     payload: "MORE_INFO_" +  response[i].room_id
                 },
-                nav_button = {
-                    title: 'נווט עם waze',
-                    type: 'web_url',
-                    url: wazelink
-                },
-                buttons = [url_button,info_button,nav_button],
+                // nav_button = {
+                //     title: 'נווט עם waze',
+                //     type: 'web_url',
+                //     url: wazelink
+                // },
+                buttons = [url_button,info_button],
                 default_action = {
                     type: 'web_url',
                     url: response[i].website || "",
@@ -255,8 +255,8 @@ function createRoomsList(response) {
 
                 };
 
-            list.push(element)
-            });
+            list.push(element);
+            // });
         }
     }
     return list
@@ -408,7 +408,7 @@ function average(arr) {
     for(let key in arr){
         sum += arr[key];
     }
-    return sum / arr.length;
+    return Math.round(sum / arr.length);
 }
 
 function calculateAveragePrice(room,isWeekend) {

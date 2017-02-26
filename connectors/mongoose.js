@@ -119,7 +119,9 @@ function findRoomInDb(context) {
                 console.log(cleaned_nop);
                 let loc_query = {};
                 if(cleaned_location) loc_query = {'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}, {"region_2": {'$regex': cleaned_location}}]};
-                EscapeRoom.find({'$and': [loc_query, {"max_players": {'$gt': cleaned_nop}}]}, {
+                let nop_query = {};
+                if(cleaned_nop > 1) nop_query = {'$and': [{"max_players": {'$gte': cleaned_nop}},{"min_players": {'$lte': cleaned_nop}}]};
+                EscapeRoom.find({'$and': [loc_query, nop_query ]}, {
                     'room_id': true,
                     'room_name': true,
                     'company_name': true,
