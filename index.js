@@ -46,31 +46,42 @@ function handleError(res, reason, message, code) {
 }
 
 
-
 function handleFBMessage(entry) {
     let recipient = entry.sender.id;
     let message = entry.message.text;
     Bot.findOrCreateSession(recipient).then(sessionid => {
 
-        let session_context = Bot.sessions[sessionid];
+        let context = Bot.sessions[sessionid].context;
 
         Bot.easterEggs(message).then(function (reply) {
             if (reply) {
                 FB.newSimpleMessage(recipient, reply)
             } else {
-                Bot.findRoomByName(message).then(function (reply) {
-                    if (reply && reply.length > 0) {
-                        FB.newStructuredMessage(recipient, reply)
-                    } else {
-                        Bot.findRoomsByCompany(message).then(function (reply) {
-                            if (reply && reply.length > 0) {
-                                FB.newStructuredMessage(recipient, reply)
-                            } else {
-                                Bot.read(recipient, message)
-                            }
-                        });
-                    }
-                });
+                if (!isNaN(message)) {
+                    context.num_of_people = Number(message);
+                    Bot.findEscapeRoomByContext(context).then(function (new_context) {
+                        if (new_context && new_context.room_list && new_context.room_list.length > 0) {
+                            Bot.displayResponse(recipient, new_context);
+                        }
+                    });
+                }
+                else {
+                    Bot.findRoomByName(message).then(function (reply) {
+                        if (reply && reply.length > 0) {
+                            FB.newStructuredMessage(recipient, reply)
+                        } else {
+                            Bot.findRoomsByCompany(message).then(function (reply) {
+                                if (reply && reply.length > 0) {
+                                context.company_name = message;
+                                context.room_list = reply;
+                                    Bot.displayResponse(recipient, context);
+                                } else {
+                                    Bot.read(recipient, message)
+                                }
+                            });
+                        }
+                    });
+                }
             }
         }).catch(err => {
             console.log(err);
@@ -132,6 +143,24 @@ function createGroupSizeQR() {
      return Bot.createQuickReplies(data);
 }
 
+function createCompanyQR() {
+    let data = {};
+    data["golden key"] = "COMPANY_QR1";
+    data["locked"] = "COMPANY_QR2";
+    data["rsq"] = "COMPANY_QR3";
+    data["portal y"] = "COMPANY_QR4";
+    data["inside out"] = "COMPANY_QR5";
+    data["escape city"] = "COMPANY_QR6";
+    data["questomania"] = "COMPANY_QR7";
+    data["escaperoom israel"] = "COMPANY_QR8";
+    data["brainit"] = "COMPANY_QR9";
+    data["out of the box"] = "COMPANY_QR10";
+    data["exit room"] = "COMPANY_QR11";
+
+    return Bot.createQuickReplies(data);
+}
+
+
 
 function askForLocation(recipient) {
     FB.newSimpleMessage(recipient, "אנא הכנס מיקום מבוקש:").then(result => {
@@ -147,6 +176,15 @@ function askForGroupSize(recipient) {
     })
 }
 
+function askForCompany(recipient) {
+    FB.newSimpleMessage(recipient, "אנא הכנס שם של חברת חדרי בריחה:").then(result => {
+        let quick_answers = createCompanyQR();
+        FB.newSimpleMessage(recipient, "או בחר חברה מהרשימה:", quick_answers)
+    })
+}
+
+
+
 function resetSession(recipient) {
     Bot.findOrCreateSession(recipient).then(sessionid => {
 
@@ -155,6 +193,7 @@ function resetSession(recipient) {
         delete context.num_of_people;
         delete context.room_list;
         delete context.room_id;
+        delete context.company_name;
         Bot.createGeneralMenu(recipient).then(menu => {
             FB.newStructuredMessage(recipient, menu)
         })
@@ -183,6 +222,10 @@ app.post('/webhook', function (req, res) {
             } else if (entry.postback.payload === "SEARCH_BY_GROUP_SIZE") {
                 context.state = "GROUP_SIZE";
                 askForGroupSize(recipient);
+            } else if (entry.postback.payload === "SEARCH_BY_COMPANY") {
+                context.state = "SEARCH_BY_COMPANY";
+                askForCompany(recipient);
+
             } else if (entry.postback.payload === "NEW_SEARCH") {
                 delete context.state;
                 resetSession(recipient);
@@ -199,7 +242,7 @@ app.post('/webhook', function (req, res) {
                     Bot.displayResponse(recipient, context);
 
                 }).catch(err => {
-                    FB.newSimpleMessage(recipient, "לא הצלחתי למצוא חדרים במיקום המבוקש").then(r => {
+                    Bot.displayErrorMessage(recipient,context).then(r => {
                         askForLocation(recipient);
                     });
                 });
@@ -210,14 +253,23 @@ app.post('/webhook', function (req, res) {
                     context.state = "";
                    Bot.displayResponse(recipient, context);
                 }).catch(err => {
-                    let msg =  "לא הצלחתי למצוא חדרים ";
-                    if(context.location) msg += "ב " + context.location;
-                    msg += " לכמות האנשים המבוקשת";
-                    FB.newSimpleMessage(recipient,msg).then(r => {
+                    Bot.displayErrorMessage(recipient,context).then(r => {
                       askForGroupSize(recipient);
                     })
                 });
+            } else if (entry.message.quick_reply.payload.startsWith("COMPANY_QR")) {
+                console.log("adding company: " + entry.message.text);
+                context.company_name = entry.message.text;
+                Bot.findEscapeRoomByContext(context).then(context => {
+                    context.state = "";
+                    Bot.displayResponse(recipient, context);
+                }).catch(err => {
+                    Bot.displayErrorMessage(recipient,context).then(r => {
+                        askForCompany(recipient);
+                    })
+                });
             }
+
         } else if (entry && entry.message) {
             if (entry.message.attachments) {
                 // NOT SMART ENOUGH FOR ATTACHMENTS YET

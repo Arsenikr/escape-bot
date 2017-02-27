@@ -17,26 +17,25 @@ function findOrCreateSession(fbid) {
 
             let sessionId;
 
-    // DOES USER SESSION ALREADY EXIST?
-    Object.keys(sessions).forEach(k => {
-        if (sessions[k].fbid === fbid
-    )
-    {
-        // YUP
-        sessionId = k
-    }
-});
+            // DOES USER SESSION ALREADY EXIST?
+            Object.keys(sessions).forEach(k => {
+                if (sessions[k].fbid === fbid
+                ) {
+                    // YUP
+                    sessionId = k
+                }
+            });
 
-    // No session so we will create one
-    if (!sessionId) {
-        sessionId = new Date().toISOString();
-        sessions[sessionId] = {
-            fbid: fbid,
-            context: {
-                _fbid_: fbid
+            // No session so we will create one
+            if (!sessionId) {
+                sessionId = new Date().toISOString();
+                sessions[sessionId] = {
+                    fbid: fbid,
+                    context: {
+                        _fbid_: fbid
+                    }
+                }
             }
-        }
-    }
 
             return resolve(sessionId);
         });
@@ -83,7 +82,7 @@ let actions = {
 
 
     findEscapeRoom({context, entities}) {
-        return new Promise(function (resolve,reject) {
+        return new Promise(function (resolve, reject) {
             let location = firstEntityValue(entities, 'location');
             let num_of_people = firstEntityValue(entities, 'math_expression');
 
@@ -91,11 +90,10 @@ let actions = {
             console.log("wit received: " + num_of_people);
 
 
-
-            if(location) {
+            if (location) {
                 context.location = location;
             }
-            if(num_of_people){
+            if (num_of_people) {
                 context.num_of_people = num_of_people;
             }
 
@@ -150,7 +148,7 @@ function read(sender, message) {
 
 function easterEggs(message) {
     return new Promise(
-        function (resolve,reject) {
+        function (resolve, reject) {
 
             if (message == "אוינק") {
                 return resolve(emoji.emojify(':pig_nose: :pig_nose: :pig_nose:'))
@@ -161,8 +159,8 @@ function easterEggs(message) {
                     } else {
                         return resolve(undefined);
                     }
-                }).catch(function(err) {
-                   return reject(err);
+                }).catch(function (err) {
+                    return reject(err);
                 });
             }
         });
@@ -170,7 +168,7 @@ function easterEggs(message) {
 
 function findRoomByName(message) {
     return new Promise(
-        function (resolve,reject) {
+        function (resolve, reject) {
 
             DB.findRoomByName(message).then(function (response) {
                 if (response) {
@@ -201,17 +199,20 @@ function findRoomsByCompany(message) {
 }
 
 function findEscapeRoomByContext(context) {
-        return new Promise(
-            function (resolve, reject) {
-                DB.findRoomInDb(context).then(response => {
+    return new Promise(
+        function (resolve, reject) {
+            DB.findRoomInDb(context).then(response => {
+                if(response){
                     context.room_list = createRoomsList(response);
                     return resolve(context);
-
-                }).catch(function (err) {
-                    return reject(err);
-                });
+                } else {
+                    return reject(undefined)
+                }
+            }).catch(function (err) {
+                return reject(err);
             });
-    }
+        });
+}
 
 
 function createRoomsList(response) {
@@ -230,14 +231,14 @@ function createRoomsList(response) {
                 info_button = {
                     title: 'עוד מידע',
                     type: 'postback',
-                    payload: "MORE_INFO_" +  response[i].room_id
+                    payload: "MORE_INFO_" + response[i].room_id
                 },
                 nav_button = {
                     title: 'נווט עם waze',
                     type: 'web_url',
                     url: response[i].waze_link
                 },
-                buttons = [url_button,info_button,nav_button],
+                buttons = [url_button, info_button, nav_button],
                 default_action = {
                     type: 'web_url',
                     url: response[i].website || "",
@@ -254,12 +255,13 @@ function createRoomsList(response) {
                 };
 
             list.push(element);
+            // });
         }
     }
     return list
 }
 
-function createMenuItem(title, payload,image_url) {
+function createMenuItem(title, payload, image_url) {
     let postback_button = {
             title: title,
             type: 'postback',
@@ -271,7 +273,7 @@ function createMenuItem(title, payload,image_url) {
             buttons: buttons,
         };
 
-    if(image_url) {
+    if (image_url) {
         element.image_url = image_url;
     }
 
@@ -286,26 +288,26 @@ function createMapItem(address) {
     }
 }
 
-function createMenu(data,images){
+function createMenu(data, images) {
     let list = [];
     if (data) {
-        for(let key in data){
-            list.push(createMenuItem(key,data[key],images[key]));
+        for (let key in data) {
+            list.push(createMenuItem(key, data[key], images[key]));
         }
     }
     return list
 }
 
-function createQuickReply(title,payload){
+function createQuickReply(title, payload) {
     return {
-        content_type:"text",
+        content_type: "text",
         title: title,
         payload: payload
     }
 }
 
-function createQuickReplies(data){
-    if(data) {
+function createQuickReplies(data) {
+    if (data) {
 
         let replies_list = [];
         for (let key in data) {
@@ -324,10 +326,6 @@ function createGeneralMenu(recipient) {
                 let context = sessions[sessionId].context;
                 let data = {};
                 let images = {};
-                // data["חיפוש לפי שם חדר"] = "SEARCH_BY_ROOM_NAME";
-                // if(!context.room_company) {
-                //     data["חיפוש לפי חברה של חדרים"] = "SEARCH_BY_COMPANY";
-                // }
 
                 if (!context.location) {
                     data["חיפוש לפי מיקום"] = "SEARCH_BY_LOCATION";
@@ -338,10 +336,14 @@ function createGeneralMenu(recipient) {
                     images["חיפוש לפי גודל קבוצה"] = 'https://s23.postimg.org/9dm2s2i6z/people_467438_640.jpg';
 
                 }
+                if(!context.company_name) {
+                    data["חיפוש לפי חברה"] = "SEARCH_BY_COMPANY";
+                    images["חיפוש לפי חברה"] = "https://s12.postimg.org/caf2xxbtp/lock_1673604_640.jpg"
+                }
                 data["חיפוש חדש"] = "NEW_SEARCH";
                 images["חיפוש חדש"] = 'https://s8.postimg.org/hmfkndsit/glass_2025715_640.png';
 
-                return resolve(createMenu(data,images));
+                return resolve(createMenu(data, images));
             });
         });
 }
@@ -349,10 +351,10 @@ function createGeneralMenu(recipient) {
 
 function generateErrorMsg(context) {
     return new Promise(
-        function (resolve,reject) {
+        function (resolve, reject) {
 
             if (context.location) {
-                DB.findErrorMessage('location').then( function (response) {
+                DB.findErrorMessage('location').then(function (response) {
                     if (response) {
                         let msg = response[0].A.replace('<>', context.location);
                         return resolve(msg);
@@ -370,18 +372,21 @@ function generateErrorMsg(context) {
         });
 }
 
-function drawMenu(recipient,context) {
+function drawMenu(recipient, context) {
     return new Promise(
         function (resolve) {
             createGeneralMenu(recipient).then(menu => {
-            FB.newStructuredMessage(recipient, menu);
-            return resolve(menu)
+                FB.newStructuredMessage(recipient, menu);
+                return resolve(menu)
             })
         });
 }
 function displayResponse(recipient, context) {
     let msg = "הנה רשימה של חדרים ";
 
+    if (context.company_name) {
+        msg += "של חברת " + context.company_name + " ";
+    }
     if (context.location) {
         msg += "ב" + context.location;
     } else msg += " בכל הארץ ";
@@ -393,45 +398,66 @@ function displayResponse(recipient, context) {
         FB.newStructuredMessage(recipient, context.room_list).then(r => {
             FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש או להתחיל חיפוש חדש:").then(r => {
                 createGeneralMenu(recipient).then(menu => {
-                    FB.newStructuredMessage(recipient,menu);
+                    FB.newStructuredMessage(recipient, menu);
                 })
             })
         })
     })
 }
 
+function displayErrorMessage(recipient, context) {
+    return new Promise(
+        function (resolve) {
+
+            let msg = "לא הצלחתי למצוא חדרים ";
+
+            if (context.company_name) {
+                msg += "של חברת " + context.company_name + " ";
+            }
+            if (context.location) {
+                msg += "ב" + context.location;
+            } else msg += " בכל הארץ ";
+            if (context.num_of_people && !(context.num_of_people === 1)) {
+                msg += " ל" + context.num_of_people + " אנשים"
+            }
+            FB.newSimpleMessage(recipient, msg).then(r => {
+                return resolve(context)
+            })
+        })
+}
+
 function average(arr) {
     let sum = 0;
-    for(let key in arr){
+    for (let key in arr) {
         sum += arr[key];
     }
     return Math.round(sum / arr.length);
 }
 
-function calculateAveragePrice(room,isWeekend) {
-    if(!isWeekend){
+function calculateAveragePrice(room, isWeekend) {
+    if (!isWeekend) {
         let prices = [];
-        if(room.price_1) prices.push(room.price_1);
-        if(room.price_2) prices.push(room.price_2);
-        if(room.price_3) prices.push(room.price_3);
-        if(room.price_4) prices.push(room.price_4);
-        if(room.price_5) prices.push(room.price_5);
-        if(room.price_6) prices.push(room.price_6);
-        if(room.price_7) prices.push(room.price_7);
-        if(room.price_8) prices.push(room.price_8);
-        if(room.price_9) prices.push(room.price_9);
+        if (room.price_1) prices.push(room.price_1);
+        if (room.price_2) prices.push(room.price_2);
+        if (room.price_3) prices.push(room.price_3);
+        if (room.price_4) prices.push(room.price_4);
+        if (room.price_5) prices.push(room.price_5);
+        if (room.price_6) prices.push(room.price_6);
+        if (room.price_7) prices.push(room.price_7);
+        if (room.price_8) prices.push(room.price_8);
+        if (room.price_9) prices.push(room.price_9);
         return average(prices)
     } else {
         let prices = [];
-        if(room.weekend_price_1) prices.push(room.weekend_price_1);
-        if(room.weekend_price_2) prices.push(room.weekend_price_2);
-        if(room.weekend_price_3) prices.push(room.weekend_price_3);
-        if(room.weekend_price_4) prices.push(room.weekend_price_4);
-        if(room.weekend_price_5) prices.push(room.weekend_price_5);
-        if(room.weekend_price_6) prices.push(room.weekend_price_6);
-        if(room.weekend_price_7) prices.push(room.weekend_price_7);
-        if(room.weekend_price_8) prices.push(room.weekend_price_8);
-        if(room.weekend_price_9) prices.push(room.weekend_price_9);
+        if (room.weekend_price_1) prices.push(room.weekend_price_1);
+        if (room.weekend_price_2) prices.push(room.weekend_price_2);
+        if (room.weekend_price_3) prices.push(room.weekend_price_3);
+        if (room.weekend_price_4) prices.push(room.weekend_price_4);
+        if (room.weekend_price_5) prices.push(room.weekend_price_5);
+        if (room.weekend_price_6) prices.push(room.weekend_price_6);
+        if (room.weekend_price_7) prices.push(room.weekend_price_7);
+        if (room.weekend_price_8) prices.push(room.weekend_price_8);
+        if (room.weekend_price_9) prices.push(room.weekend_price_9);
         return average(prices)
     }
 
@@ -590,8 +616,7 @@ function generateWazeLink() {
 }
 
 
-
-    module.exports = {
+module.exports = {
     sessions: sessions,
     findOrCreateSession: findOrCreateSession,
     read: read,
@@ -605,6 +630,7 @@ function generateWazeLink() {
     drawMenu: drawMenu,
     displayResponse: displayResponse,
     handleMoreInfo: handleMoreInfo,
-    generateWazeLink: generateWazeLink
+    generateWazeLink: generateWazeLink,
+    displayErrorMessage: displayErrorMessage
 };
 
