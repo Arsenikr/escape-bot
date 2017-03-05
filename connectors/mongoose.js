@@ -15,9 +15,12 @@ mongoose.connect(Config.MONGODB_URL, function (error) {
 const Schema = mongoose.Schema;
 const EscapeRoomsSchema = new Schema({
     room_id: Number,
-    room_name: String,
-    company_name: String,
+    room_name_splitted: String,
+    room_name: Array,
+    company_name_splitted: String,
+    company_name: Array,
     location: String,
+    hashtag: String,
     min_players: Number,
     max_players: Number,
     website: String,
@@ -26,7 +29,10 @@ const EscapeRoomsSchema = new Schema({
     address: String,
     latitude: Number,
     longitude: Number,
+    coordinates: Array,
     waze_link: String,
+    region_splitted: String,
+    region: Array,
     number_of_same_rooms: Number,
     soldier_discount: Number,
     soldier_discount_weekend: Number,
@@ -119,7 +125,7 @@ function findRoomInDb(context) {
                 context.num_of_people = cleaned_nop;
                 console.log(cleaned_nop);
                 let loc_query = {};
-                if(cleaned_location) loc_query = {'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}, {"region_2": {'$regex': cleaned_location}}]};
+                if(cleaned_location) loc_query = {'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}]};
                 let nop_query = {};
                 if(cleaned_nop > 1) nop_query = {'$and': [{"max_players": {'$gte': cleaned_nop}},{"min_players": {'$lte': cleaned_nop}}]};
                 let company_query = {};
@@ -135,7 +141,8 @@ function findRoomInDb(context) {
                     'address': true,
                     'latitude': true,
                     'longitude': true,
-                    'waze_link': true
+                    'waze_link': true,
+                    'hashtag': true
                 }).then(function (docs) {
                     if (docs && docs.length > 0) {
 
@@ -170,7 +177,8 @@ function findRoomByName(room_name) {
                 'address': true,
                 'latitude': true,
                 'longitude': true,
-                'waze_link': true
+                'waze_link': true,
+                'hashtag': true
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
                     chooseNDocs(docs).then(result =>
@@ -224,7 +232,8 @@ function findRoomsByCompany(company_name) {
                 'address': true,
                 'latitude': true,
                 'longitude': true,
-                'waze_link': true
+                'waze_link': true,
+                'hashtag': true
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
                     console.log("found " + docs.length + "rooms");
@@ -452,6 +461,58 @@ function getRandomDocIndices(num_of_rooms, total) {
 
 }
 
+function postProcess() {
+    return new Promise(
+        function (resolve, reject) {
+
+            EscapeRoom.find().then(function (docs) {
+                let re = "|";
+
+                for (let key in docs) {
+                    console.log(docs[key].room_name_splitted);
+                    let room_name_splitted = docs[key].room_name_splitted.split(re);
+                    for(let k in room_name_splitted){
+                        room_name_splitted[k] = room_name_splitted[k].trim();
+                    }
+                    docs[key].room_name = room_name_splitted;
+
+                    let company_name_splitted = docs[key].company_name_splitted.split(re);
+                    for(let k in company_name_splitted){
+                        company_name_splitted[k] = company_name_splitted[k].trim();
+                    }
+
+                    docs[key].company_name = company_name_splitted;
+
+                    if(docs[key].region_splitted) {
+                        let region_splitted = docs[key].region_splitted.split(re);
+                        for (let k in region_splitted) {
+                            region_splitted[k] = region_splitted[k].trim();
+                        }
+
+                        docs[key].region = region_splitted;
+                    }
+
+                    if(docs[key].latitude && docs[key].longitude) {
+                        let coords = [docs[key].latitude, docs[key].longitude];
+                        docs[key].coordinates = coords;
+                    }
+                    docs[key].save(function (err, updatedRoom) {
+                        if (err){
+                            console.log(docs[key].room_name_splitted + ": " + err);
+                        }
+                        console.log(updatedRoom.room_name[0] + " is updated")
+                    });
+
+                }
+                resolve()
+            }).catch(function (err) {
+                return reject(err);
+            });
+        });
+
+}
+
+
 module.exports = {
     findRoomInDb: findRoomInDb,
     findRoomByName: findRoomByName,
@@ -460,6 +521,7 @@ module.exports = {
     findEasterEgg: findEasterEgg,
     findRoomById: findRoomById,
     findErrorMessage: findErrorMessage,
-    findAllRooms: findAllRooms
+    findAllRooms: findAllRooms,
+    postProcess: postProcess
 
 };

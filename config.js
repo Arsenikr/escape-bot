@@ -16,6 +16,8 @@ let FB_VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN || 'my_voice_is_my_password_ve
 
 let MONGODB_URL = process.env.PROD_MONGODB || 'mongodb://127.0.0.1:27017/escape_bot';
 
+//mongodb://escape-bot:escape-bot@ds131109.mlab.com:31109/escape-bot
+
 let ESCAPE_ROOMS_COLLECTION = "escape_rooms_new";
 
 let NUM_OF_ROOMS_TO_RETURN = 10;

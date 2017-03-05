@@ -285,8 +285,14 @@ app.post('/webhook', function (req, res) {
 });
 
 app.get('/generatewaze', function (req, res) {
-    Bot.generateWazeLink().then(links => {
-        res.send(links)
-    })
+    let lat = req.query['lat'];
+    let lon = req.query['lon'];
+
+    if (lat && lon) {
+        Bot.generateWazeLink(lat,lon).then(links => {
+            res.send(links)
+        })
+
+    }
 });
 
