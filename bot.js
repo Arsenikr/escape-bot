@@ -132,7 +132,7 @@ function read(sender, message) {
                     if(err) {
                         console.error('Oops! Got an error from Wit: ', err.stack || err);
                     }
-                    
+
                     FB.newSimpleMessage(sender, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
                         createGeneralMenu(sender).then(menu => {
                             FB.newStructuredMessage(sender, menu);
