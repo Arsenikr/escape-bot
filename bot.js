@@ -6,6 +6,8 @@ const Wit = require('node-wit').Wit;
 const DB = require('./connectors/mongoose');
 const FB = require('./connectors/facebook');
 const TinyURL = require('tinyurl');
+const GeoPoint = require('geopoint');
+
 
 
 // LETS SAVE USER SESSIONS
@@ -163,13 +165,13 @@ function easterEggs(message) {
         });
 }
 
-function findRoomByName(message) {
+function findRoomByName(context,message) {
     return new Promise(
         function (resolve, reject) {
 
-            DB.findRoomByName(message).then(function (response) {
+            DB.findRoomByName(context,message).then(function (response) {
                 if (response) {
-                    return resolve(createRoomsList(response));
+                    return resolve(createRoomsList(context,response));
                 } else {
                     return resolve(undefined);
                 }
@@ -179,13 +181,13 @@ function findRoomByName(message) {
         });
 }
 
-function findRoomsByCompany(message) {
+function findRoomsByCompany(context,message) {
     return new Promise(
         function (resolve, reject) {
 
-            DB.findRoomsByCompany(message).then(function (response) {
+            DB.findRoomsByCompany(context,message).then(function (response) {
                 if (response) {
-                    return resolve(createRoomsList(response));
+                    return resolve(createRoomsList(context,response));
                 } else {
                     return resolve(undefined);
                 }
@@ -200,7 +202,7 @@ function findEscapeRoomByContext(context) {
         function (resolve, reject) {
             DB.findRoomInDb(context).then(response => {
                 if(response){
-                    context.room_list = createRoomsList(response);
+                    context.room_list = createRoomsList(context,response);
                     return resolve(context);
                 } else {
                     return reject(undefined)
@@ -212,11 +214,24 @@ function findEscapeRoomByContext(context) {
 }
 
 
-function createRoomsList(response) {
+function createRoomsList(context,response) {
     let list = [];
 
     if (response) {
         for (let i = 0; i < response.length; i++) {
+            let geo_distance = undefined;
+            if(context.lat && context.lon){
+                let point1 = new GeoPoint(response[i].latitude,response[i].longitude);
+                let point2 = new GeoPoint(context.lat,context.lon);
+                geo_distance = point1.distanceTo(point2, true);
+                geo_distance = +geo_distance.toFixed(2);
+            }
+
+            let subtitle = "";
+            if(geo_distance){
+                subtitle += geo_distance + " ק״מ" + "\n"
+            }
+            subtitle += response[i].address + "\n" + " טל׳: " + response[i].phone;
 
             let url_button = {
                     title: 'הזמנ/י',
@@ -245,7 +260,7 @@ function createRoomsList(response) {
 
                 element = {
                     title: response[i].room_name[0],
-                    subtitle: response[i].address + "\n" + " טל׳: " + response[i].phone,
+                    subtitle: subtitle,
                     buttons: buttons,
                     default_action: default_action
 

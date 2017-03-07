@@ -9,7 +9,6 @@ const FB = require('./connectors/facebook');
 const Bot = require('./bot');
 const emoji = require('node-emoji');
 
-
 app.set('port', (process.env.PORT || 5000));
 
 // Process application/x-www-form-urlencoded
