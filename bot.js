@@ -65,13 +65,7 @@ let actions = {
             if (context.room_list && context.room_list.length > 0) {
                 displayResponse(recipientId, context)
             } else {
-                generateErrorMsg(context).then(error_msg => {
-                    FB.newSimpleMessage(recipientId, error_msg).then(res => {
-                        FB.newSimpleMessage(recipientId, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
-                            drawMenu(recipientId, context);
-                        });
-                    });
-                });
+                return reject();
             }
             sessions[sessionId].context = context;
             // DO NOT RETURN CONTEXT
@@ -135,7 +129,10 @@ function read(sender, message) {
                     // sessions[sessionId].context = context;
                     return resolve()
                 }).catch((err) => {
-                    console.error('Oops! Got an error from Wit: ', err.stack || err);
+                    if(err) {
+                        console.error('Oops! Got an error from Wit: ', err.stack || err);
+                    }
+                    
                     FB.newSimpleMessage(sender, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
                         createGeneralMenu(sender).then(menu => {
                             FB.newStructuredMessage(sender, menu);
