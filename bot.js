@@ -315,13 +315,26 @@ function createQuickReply(title, payload) {
     }
 }
 
-function createQuickReplies(data) {
+
+function createLocationQuickReply() {
+    return {
+        content_type: "location",
+    }
+}
+
+
+function createQuickReplies(data,is_location) {
     if (data) {
 
         let replies_list = [];
+        if(is_location && is_location === true){
+            replies_list.push(createLocationQuickReply())
+        }
+
         for (let key in data) {
             replies_list.push(createQuickReply(key, data[key]))
         }
+
 
         return replies_list;
     } else return undefined;
@@ -336,7 +349,7 @@ function createGeneralMenu(recipient) {
                 let data = {};
                 let images = {};
 
-                if (!context.location) {
+                if (!context.location && !context.lat && !context.lon) {
                     data["חיפוש לפי מיקום"] = "SEARCH_BY_LOCATION";
                     images["חיפוש לפי מיקום"] = 'https://s21.postimg.org/iz4j6h3xz/globe_1290377_640.jpg';
                 }
@@ -398,6 +411,8 @@ function displayResponse(recipient, context) {
     }
     if (context.location) {
         msg += "ב" + context.location;
+    } else if(context.lat && context.lon) {
+        msg += "סביב המיקום שלך"
     } else msg += " בכל הארץ ";
     if (context.num_of_people && !(context.num_of_people === 1)) {
         msg += " ל" + context.num_of_people + " אנשים"

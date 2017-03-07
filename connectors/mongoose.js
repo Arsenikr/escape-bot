@@ -29,7 +29,16 @@ const EscapeRoomsSchema = new Schema({
     address: String,
     latitude: Number,
     longitude: Number,
-    coordinates: Array,
+    coordinates: {
+        type: {
+            type: String,
+            enum: 'Point',
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number]
+        }
+    },
     waze_link: String,
     region_splitted: String,
     region: Array,
@@ -125,13 +134,18 @@ function findRoomInDb(context) {
                 context.num_of_people = cleaned_nop;
                 console.log(cleaned_nop);
                 let loc_query = {};
-                if(cleaned_location) loc_query = {'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}]};
+                if(cleaned_location) {
+                    loc_query = {'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}]};
+                } else if(context.lat && context.lon){
+                    loc_query = {"coordinates": {'$near': {'$geometry': {type: 'Point',coordinates: [context.lat,context.lon]},'$maxDistance': 500000}}}
+                }
                 let nop_query = {};
                 if(cleaned_nop > 1) nop_query = {'$and': [{"max_players": {'$gte': cleaned_nop}},{"min_players": {'$lte': cleaned_nop}}]};
                 let company_query = {};
                 if(context.company_name) company_query = {"company_name": {'$regex': context.company_name}};
 
-                EscapeRoom.find({'$and': [loc_query, nop_query,company_query ]}, {
+                EscapeRoom.find({'$and': [loc_query, nop_query,company_query ]}
+                , {
                     'room_id': true,
                     'room_name': true,
                     'company_name': true,
@@ -145,9 +159,12 @@ function findRoomInDb(context) {
                     'hashtag': true
                 }).then(function (docs) {
                     if (docs && docs.length > 0) {
-
-                        chooseNDocs(docs).then(result =>
+                        if(context.lat && context.lon) {
+                            resolve(docs.slice(0,10))
+                        } else {
+                         chooseNDocs(docs).then(result =>
                         resolve(result))
+                        }
                     } else {
                         resolve(undefined)
                     }

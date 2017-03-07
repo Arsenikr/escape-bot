@@ -127,7 +127,7 @@ function createLocationQR() {
     data["חיפה"] = "LOCATION_QR6";
     data["צפון"] = "LOCATION_QR7";
 
-    return Bot.createQuickReplies(data);
+    return Bot.createQuickReplies(data,true);
 }
 
 function createGroupSizeQR() {
@@ -194,6 +194,8 @@ function resetSession(recipient) {
         delete context.room_list;
         delete context.room_id;
         delete context.company_name;
+        delete context.lat;
+        delete context.lon;``
         Bot.createGeneralMenu(recipient).then(menu => {
             FB.newStructuredMessage(recipient, menu)
         })
@@ -237,6 +239,9 @@ app.post('/webhook', function (req, res) {
             if (entry.message.quick_reply.payload.startsWith("LOCATION_QR")) {
                 console.log("adding location: " + entry.message.text);
                 context.location = entry.message.text;
+                delete context.lat;
+                delete context.lon;
+
                 Bot.findEscapeRoomByContext(context).then(context => {
                     context.state = "";
                     Bot.displayResponse(recipient, context);
@@ -272,8 +277,25 @@ app.post('/webhook', function (req, res) {
 
         } else if (entry && entry.message) {
             if (entry.message.attachments) {
-                // NOT SMART ENOUGH FOR ATTACHMENTS YET
-                FB.newSimpleMessage(recipient, "זה מעניין!")
+                if(entry.message.attachments[0] && entry.message.attachments[0].payload && entry.message.attachments[0].payload.coordinates){
+                    let lat = entry.message.attachments[0].payload.coordinates.lat;
+                    let lon = entry.message.attachments[0].payload.coordinates.long;
+                    console.log("received user location: " + lat + "," + lon);
+                    context.lat = lat;
+                    context.lon = lon;
+                    delete context.location;
+                    Bot.findEscapeRoomByContext(context).then(context => {
+                        context.state = "";
+                        Bot.displayResponse(recipient, context);
+                    }).catch(err => {
+                        Bot.displayErrorMessage(recipient,context).then(r => {
+                            askForLocation(recipient);
+                        });
+                    });
+                }else {
+                    // NOT SMART ENOUGH FOR ATTACHMENTS YET
+                    FB.newSimpleMessage(recipient, "זה מעניין!")
+                }
             } else {
                 handleFBMessage(entry);
             }
