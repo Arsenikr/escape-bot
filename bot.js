@@ -224,7 +224,7 @@ function createRoomsList(context,response) {
                 let point1 = new GeoPoint(response[i].latitude,response[i].longitude);
                 let point2 = new GeoPoint(context.lat,context.lon);
                 geo_distance = point1.distanceTo(point2, true);
-                geo_distance = +geo_distance.toFixed(2);
+                geo_distance = +geo_distance.toFixed(1);
             }
 
             let subtitle = "";
