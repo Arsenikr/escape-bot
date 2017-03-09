@@ -311,6 +311,14 @@ function createHashtagItem(hashtag) {
     }
 }
 
+function createWazeItem(url) {
+    return {
+        title: "לינק לwaze:",
+        image_url: "https://s14.postimg.org/ui4kd6j8h/Waze_logo.jpg",
+        item_url: url
+    }
+}
+
 
 function createMenu(data, images) {
     let list = [];
@@ -505,141 +513,186 @@ function calculateAveragePrice(room, isWeekend) {
 
 }
 
-function handleMoreInfo(context,recipient, room_id) {
+function handleMoreInfo(context, recipient, room_id) {
     return new Promise(
         function (resolve) {
-                context.room_id = room_id;
-                DB.findRoomById(room_id).then(room => {
-                    let elements = [];
-                    let mapItem = createMapItem(room.address);
-                    elements.push(mapItem);
+            setTimeout(function () {
+                FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
 
-                    FB.newStructuredMessage(recipient, elements).then(r => {
-                        let elements2 = [];
+                    context.room_id = room_id;
+                    DB.findRoomById(room_id).then(room => {
+                        // let elements = [];
+                        // let mapItem = createMapItem(room.address);
+                        // elements.push(mapItem);
+                        //
+                        // FB.newStructuredMessage(recipient, elements).then(r => {
+                        let elements = [];
 
                         let hashtagItem = createHashtagItem(room.hashtag);
-                        elements2.push(hashtagItem);
+                        elements.push(hashtagItem);
 
-                        FB.newStructuredMessage(recipient, elements2).then(r => {
-                            let msg_list = [];
-                            if (room.number_of_same_rooms) {
-                                msg_list.push("זהו חדר כפול")
-                            }
+                        FB.newStructuredMessage(recipient, elements).then(r => {
+                            setTimeout(function () {
 
-                            if (context.num_of_people > 1 && context.num_of_people < 10) {
-                                msg_list.push("לקבוצה של " + context.num_of_people + ": ");
-                                msg_list.push("מחיר לשחקן באמצע שבוע: " + room['price_' + context.num_of_people] + " שקלים");
-                                msg_list.push("מחיר לשחקן בסוף שבוע: " + room['weekend_price_' + context.num_of_people] + " שקלים")
-                            } else {
-                                msg_list.push("מחיר ממוצע לשחקן באמצע שבוע: " + calculateAveragePrice(room, false) + " שקלים");
-                                msg_list.push("מחיר ממוצע לשחקן בסוף שבוע: " + calculateAveragePrice(room, true) + " שקלים")
-                            }
-
-                            if (room.soldier_discount || room.soldier_discount_weekend || room.student_discount || room.student_discount_weekend || room.children_discount || room.children_discount_weekend) {
-                                msg_list.push("הנחות:");
-
-                                let soldier_discount = undefined;
-                                if (room.soldier_discount) {
-                                    soldier_discount = "לחיילים " + room.soldier_discount + "% באמצע שבוע";
+                                let msg_list = [];
+                                if (room.number_of_same_rooms) {
+                                    msg_list.push("זהו חדר כפול")
                                 }
 
-                                if (room.soldier_discount_weekend) {
-                                    soldier_discount += ", ו " + room.soldier_discount_weekend + "% בסוף שבוע"
-                                }
-                                if (soldier_discount) {
-                                    msg_list.push(soldier_discount);
-                                }
-
-                                let student_discount = undefined;
-                                if (room.student_discount) {
-                                    student_discount = "לסטודנטים " + room.student_discount + "% באמצע שבוע";
+                                if (context.num_of_people > 1 && context.num_of_people < 10) {
+                                    msg_list.push("לקבוצה של " + context.num_of_people + ": ");
+                                    msg_list.push("מחיר לשחקן באמצע שבוע: " + room['price_' + context.num_of_people] + " שקלים");
+                                    msg_list.push("מחיר לשחקן בסוף שבוע: " + room['weekend_price_' + context.num_of_people] + " שקלים")
+                                } else {
+                                    msg_list.push("מחיר ממוצע לשחקן באמצע שבוע: " + calculateAveragePrice(room, false) + " שקלים");
+                                    msg_list.push("מחיר ממוצע לשחקן בסוף שבוע: " + calculateAveragePrice(room, true) + " שקלים")
                                 }
 
-                                if (room.student_discount_weekend) {
-                                    student_discount += ", ו " + room.student_discount_weekend + "% בסוף שבוע"
-                                }
-                                if (student_discount) {
-                                    msg_list.push(student_discount);
+                                let merged_msg = "";
+                                for (let key in msg_list) {
+                                    merged_msg += msg_list[key] + "\n";
                                 }
 
-                                let children_discount = undefined;
-                                if (room.children_discount) {
-                                    children_discount = "לילדים " + room.children_discount + "% באמצע שבוע";
-                                }
 
-                                if (room.children_discount_weekend) {
-                                    children_discount += ", ו " + room.children_discount_weekend + "% בסוף שבוע"
-                                }
-                                if (children_discount) {
-                                    msg_list.push(children_discount);
-                                }
-                            }
-
-                            if (room.is_beginner) {
-                                let bool = Boolean(room.is_beginner);
-                                let msg = "";
-                                if (!bool) msg += " לא ";
-                                msg += "מתאים למתחילים";
-                                msg_list.push(msg);
-                            }
-
-                            if (room.is_for_children) {
-                                let bool = Boolean(room.is_for_children);
-                                let msg = "";
-                                if (!bool) msg += " לא ";
-                                msg += "מתאים לילדים";
-                                msg_list.push(msg);
-                            }
-
-                            if (room.is_scary) {
-                                let bool = Boolean(room.is_scary);
-                                let msg = "";
-                                if (!bool) msg += " לא ";
-                                msg += "מפחיד";
-                                msg_list.push(msg);
-                            }
-
-                            if (room.is_for_pregnant) {
-                                let bool = Boolean(room.is_for_pregnant);
-                                let msg = "";
-                                if (!bool) msg += " לא ";
-                                msg += "מתאים לנשים בהריון";
-                                msg_list.push(msg);
-                            }
-
-                            if (room.is_for_disabled) {
-                                let bool = Boolean(room.is_for_disabled);
-                                let msg = "";
-                                if (!bool) msg += " לא ";
-                                msg += "מונגש לנכים";
-                                msg_list.push(msg);
-                            }
-
-                            if (room.is_for_hearing_impaired) {
-                                let bool = Boolean(room.is_for_hearing_impaired);
-                                let msg = "";
-                                if (!bool) msg += " לא ";
-                                msg += "מונגש לכבדי שמיעה ";
-                                msg_list.push(msg);
-                            }
-
-                            if (room.is_credit_card_accepted) {
-                                let bool = Boolean(room.is_credit_card_accepted);
-                                let msg = "";
-                                if (!bool) msg += " לא ";
-                                msg += "ניתן לשלם באשראי";
-                                msg_list.push(msg);
-                            }
-                            let merged_msg = "";
-                            for (let key in msg_list) {
-                                merged_msg += msg_list[key] + "\n";
-                            }
-
-                            FB.newSimpleMessage(recipient, merged_msg);
-                            resolve(context);
+                                FB.newSimpleMessage(recipient, merged_msg).then(r =>{
+                                    let data = {};
+                                    data["...אני רוצה לדעת עוד"] = "MORE_INFO2_" + room_id;
+                                    let qr = createQuickReplies(data);
+                                    FB.newSimpleMessage(recipient, "רוצה לדעת עוד?", qr).then(r => {
+                                        resolve(context);
+                                    });
+                                });
+                            }, 3000)
                         });
+
                     });
-                });
+                }, 3000)
+            });
+        });
+}
+
+function handleMoreInfo2(context, recipient, room_id) {
+    return new Promise(
+        function (resolve) {
+            context.room_id = room_id;
+            setTimeout(function () {
+                FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
+
+                    DB.findRoomById(room_id).then(room => {
+                        let elements = [];
+                        let mapItem = createWazeItem(room.waze_link);
+                        elements.push(mapItem);
+
+                        FB.newStructuredMessage(recipient, elements).then(r => {
+
+                                let msg_list = [];
+                                if (room.soldier_discount || room.soldier_discount_weekend || room.student_discount || room.student_discount_weekend || room.children_discount || room.children_discount_weekend) {
+                                    msg_list.push("הנחות:");
+
+                                    let soldier_discount = undefined;
+                                    if (room.soldier_discount) {
+                                        soldier_discount = "לחיילים " + room.soldier_discount + "% באמצע שבוע";
+                                    }
+
+                                    if (room.soldier_discount_weekend) {
+                                        soldier_discount += ", ו " + room.soldier_discount_weekend + "% בסוף שבוע"
+                                    }
+                                    if (soldier_discount) {
+                                        msg_list.push(soldier_discount);
+                                    }
+
+                                    let student_discount = undefined;
+                                    if (room.student_discount) {
+                                        student_discount = "לסטודנטים " + room.student_discount + "% באמצע שבוע";
+                                    }
+
+                                    if (room.student_discount_weekend) {
+                                        student_discount += ", ו " + room.student_discount_weekend + "% בסוף שבוע"
+                                    }
+                                    if (student_discount) {
+                                        msg_list.push(student_discount);
+                                    }
+
+                                    let children_discount = undefined;
+                                    if (room.children_discount) {
+                                        children_discount = "לילדים " + room.children_discount + "% באמצע שבוע";
+                                    }
+
+                                    if (room.children_discount_weekend) {
+                                        children_discount += ", ו " + room.children_discount_weekend + "% בסוף שבוע"
+                                    }
+                                    if (children_discount) {
+                                        msg_list.push(children_discount);
+                                    }
+                                }
+
+                                if (room.is_beginner) {
+                                    let bool = Boolean(room.is_beginner);
+                                    let msg = "";
+                                    if (!bool) msg += " לא ";
+                                    msg += "מתאים למתחילים";
+                                    msg_list.push(msg);
+                                }
+
+                                if (room.is_for_children) {
+                                    let bool = Boolean(room.is_for_children);
+                                    let msg = "";
+                                    if (!bool) msg += " לא ";
+                                    msg += "מתאים לילדים";
+                                    msg_list.push(msg);
+                                }
+
+                                if (room.is_scary) {
+                                    let bool = Boolean(room.is_scary);
+                                    let msg = "";
+                                    if (!bool) msg += " לא ";
+                                    msg += "מפחיד";
+                                    msg_list.push(msg);
+                                }
+
+                                if (room.is_for_pregnant) {
+                                    let bool = Boolean(room.is_for_pregnant);
+                                    let msg = "";
+                                    if (!bool) msg += " לא ";
+                                    msg += "מתאים לנשים בהריון";
+                                    msg_list.push(msg);
+                                }
+
+                                if (room.is_for_disabled) {
+                                    let bool = Boolean(room.is_for_disabled);
+                                    let msg = "";
+                                    if (!bool) msg += " לא ";
+                                    msg += "מונגש לנכים";
+                                    msg_list.push(msg);
+                                }
+
+                                if (room.is_for_hearing_impaired) {
+                                    let bool = Boolean(room.is_for_hearing_impaired);
+                                    let msg = "";
+                                    if (!bool) msg += " לא ";
+                                    msg += "מונגש לכבדי שמיעה ";
+                                    msg_list.push(msg);
+                                }
+
+                                if (room.is_credit_card_accepted) {
+                                    let bool = Boolean(room.is_credit_card_accepted);
+                                    let msg = "";
+                                    if (!bool) msg += " לא ";
+                                    msg += "ניתן לשלם באשראי";
+                                    msg_list.push(msg);
+                                }
+                                let merged_msg = "";
+                                for (let key in msg_list) {
+                                    merged_msg += msg_list[key] + "\n";
+                                }
+                                FB.newSimpleMessage(recipient, merged_msg).then( r => {
+                                    resolve(context);
+                                });
+                        });
+
+                    });
+                }, 3000)
+            });
         });
 }
 
@@ -669,6 +722,7 @@ module.exports = {
     drawMenu: drawMenu,
     displayResponse: displayResponse,
     handleMoreInfo: handleMoreInfo,
+    handleMoreInfo2: handleMoreInfo2,
     generateWazeLink: generateWazeLink,
     displayErrorMessage: displayErrorMessage
 };

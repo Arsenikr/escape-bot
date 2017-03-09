@@ -222,9 +222,13 @@ app.post('/webhook', function (req, res) {
                     } else if (entry.postback.payload === "NEW_SEARCH") {
                         delete context.state;
                         resetSession(context, recipient);
-                    } else if (entry.postback.payload.startsWith('MORE_INFO_')) {
-                        let room_name = entry.postback.payload.substring('MORE_INFO_'.length);
-                        Bot.handleMoreInfo(context, recipient, room_name)
+                    } else if (entry.postback.payload.startsWith('MORE_INFO_')) {    FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
+                        FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
+
+                            let room_name = entry.postback.payload.substring('MORE_INFO_'.length);
+                            Bot.handleMoreInfo(context, recipient, room_name)
+                        });
+                    });
                     } else if (entry.postback.payload.startsWith('MORE_ROOMS_')) {
                         setTimeout(function () {
                             FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
@@ -296,8 +300,15 @@ app.post('/webhook', function (req, res) {
                                 askForCompany(recipient);
                             })
                         });
-                    }
+                    } else if (entry.message.quick_reply.payload.startsWith("MORE_INFO2_")) {
+                        FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
+                            FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
 
+                                let room_name = entry.message.quick_reply.payload.substring("MORE_INFO2_".length);
+                                Bot.handleMoreInfo2(context, recipient, room_name)
+                            });
+                        });
+                    }
                 } else if (entry && entry.message) {
                     if (entry.message.attachments) {
                         if (entry.message.attachments[0] && entry.message.attachments[0].payload && entry.message.attachments[0].payload.coordinates) {
