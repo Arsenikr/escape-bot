@@ -248,7 +248,7 @@ app.post('/webhook', function (req, res) {
                         })
                     }, 3000);
 
-                    } else if (entry.postback.payload === 'NEW_SEARCH'){
+                    } else if (entry.postback.payload === 'NEW_SEARCH' || entry.postback.payload === 'START_NEW_SEARCH'){
                         setTimeout(function() {
                             FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
                             delete context.state;
