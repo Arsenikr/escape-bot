@@ -229,10 +229,12 @@ app.post('/webhook', function (req, res) {
                         setTimeout(function () {
                             FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
                                 let slice_index = entry.postback.payload.substring('MORE_ROOMS_'.length);
-                                if(context.room_list.length - slice_index === 1){
-                                    FB.newStructuredMessage(recipient, context.room_list.slice(slice_index))
-                                } else {
-                                    FB.newListMessage(recipient, context.room_list, Number(slice_index))
+                                if(context.room_list) {
+                                    if (context.room_list.length - slice_index === 1) {
+                                        FB.newStructuredMessage(recipient, context.room_list.slice(slice_index))
+                                    } else {
+                                        FB.newListMessage(recipient, context.room_list, Number(slice_index))
+                                    }
                                 }
                             }, 5000)
                         });
