@@ -219,9 +219,6 @@ app.post('/webhook', function (req, res) {
                         context.state = "SEARCH_BY_COMPANY";
                         askForCompany(recipient);
 
-                    } else if (entry.postback.payload === "NEW_SEARCH") {
-                        delete context.state;
-                        resetSession(context, recipient);
                     } else if (entry.postback.payload.startsWith('MORE_INFO_')) {    FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
                         FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
 

@@ -556,7 +556,7 @@ function handleMoreInfo(context, recipient, room_id) {
 
                                 FB.newSimpleMessage(recipient, merged_msg).then(r =>{
                                     let data = {};
-                                    data["...אני רוצה לדעת עוד"] = "MORE_INFO2_" + room_id;
+                                    data["אני רוצה לדעת עוד..."] = "MORE_INFO2_" + room_id;
                                     let qr = createQuickReplies(data);
                                     FB.newSimpleMessage(recipient, "רוצה לדעת עוד?", qr).then(r => {
                                         resolve(context);
