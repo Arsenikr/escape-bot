@@ -253,10 +253,8 @@ app.post('/webhook', function (req, res) {
                             FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
                             delete context.state;
                             resetSession(context, recipient);
-                            Bot.createGeneralMenu(context).then(menu => {
-                                FB.newStructuredMessage(recipient, menu);
-                            })
-                        }) }, 3000);
+                        })
+                        }, 3000);
                     }
 
                 } else if (entry && entry.message && entry.message.quick_reply) {
