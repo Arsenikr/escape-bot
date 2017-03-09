@@ -45,74 +45,71 @@ function handleError(res, reason, message, code) {
 }
 
 
-function handleFBMessage(entry) {
+function handleFBMessage(sessionId, context, entry) {
     let recipient = entry.sender.id;
     let message = entry.message.text;
-    Bot.findOrCreateSession(recipient).then(sessionid => {
 
-        let context = Bot.sessions[sessionid].context;
-
-        Bot.easterEggs(message).then(function (reply) {
-            if (reply) {
-                FB.newSimpleMessage(recipient, reply)
-            } else {
-                if (!isNaN(message)) {
-                    context.num_of_people = Number(message);
-                    Bot.findEscapeRoomByContext(context).then(function (new_context) {
-                        if (new_context && new_context.room_list && new_context.room_list.length > 0) {
-                            Bot.displayResponse(recipient, new_context);
-                        }
-                    });
-                }
-                else {
-                    Bot.findRoomByName(message).then(function (reply) {
-                        if (reply && reply.length > 0) {
-                            FB.newStructuredMessage(recipient, reply)
-                        } else {
-                            Bot.findRoomsByCompany(message).then(function (reply) {
-                                if (reply && reply.length > 0) {
+    Bot.easterEggs(message).then(function (reply) {
+        if (reply) {
+            FB.newSimpleMessage(recipient, reply)
+        } else {
+            if (!isNaN(message)) {
+                context.num_of_people = Number(message);
+                Bot.findEscapeRoomByContext(context).then(function (new_context) {
+                    if (new_context && new_context.room_list && new_context.room_list.length > 0) {
+                        Bot.displayResponse(recipient, new_context);
+                    }
+                });
+            }
+            else {
+                Bot.findRoomByName(message).then(function (reply) {
+                    if (reply && reply.length > 0) {
+                        FB.newStructuredMessage(recipient, reply)
+                    } else {
+                        Bot.findRoomsByCompany(message).then(function (reply) {
+                            if (reply && reply.length > 0) {
                                 context.company_name = message;
                                 context.room_list = reply;
-                                    Bot.displayResponse(recipient, context);
-                                } else {
-                                    Bot.read(recipient, message)
-                                }
-                            });
-                        }
-                    });
-                }
+                                Bot.displayResponse(recipient, context);
+                            } else {
+                                Bot.read(sessionId, context, recipient, message)
+                            }
+                        });
+                    }
+                });
             }
-        }).catch(err => {
-            console.log(err);
-            FB.newSimpleMessage(entry.sender.id, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
-                Bot.drawMenu(session_context, entry);
-            });
+        }
+    }).catch(err => {
+        console.log(err);
+        FB.newSimpleMessage(entry.sender.id, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
+            Bot.drawMenu(session_context, entry);
         });
     });
 }
 
-function sendStartMessages(entry,profile) {
-    Bot.findOrCreateSession(entry.sender.id).then( sessionid => {
+function sendStartMessages(context, entry, profile) {
+    setTimeout(function () {
+        FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
 
-    let fname =  profile.first_name  || "בוטן";
-    let recipient = entry.sender.id;
-    let context = Bot.sessions[sessionid].context;
-    FB.newSimpleMessage(recipient, "שלום " + fname + "! אני בוט שיודע לתת מידע על חדרי בריחה בישראל" ).then(resp => {
-        let message = "";
-        if(profile.gender && profile.gender === "female"){
-            message =  "את יכולה לשאול אותי מידע על חדרים, ולחפש חדרים על פי קריטריונים שונים"
-        } else{
-            message = "אתה יכול לשאול אותי מידע על חדרים, ולחפש חדרים על פי קריטריונים שונים"
-        }
-        FB.newSimpleMessage(recipient, message).then(resp => {
-            FB.newSimpleMessage(recipient,"בואו נתחיל!").then(r => {
-                Bot.drawMenu(recipient, context).then(res => {
-                    // Bot.sessions[sessionid].context.is_started = true;
+            let fname = profile.first_name || "בוטן";
+            let recipient = entry.sender.id;
+            FB.newSimpleMessage(recipient, "שלום " + fname + "! אני בוט שיודע לתת מידע על חדרי בריחה בישראל").then(resp => {
+                let message = "";
+                if (profile.gender && profile.gender === "female") {
+                    message = "את יכולה לשאול אותי מידע על חדרים, ולחפש חדרים על פי קריטריונים שונים"
+                } else {
+                    message = "אתה יכול לשאול אותי מידע על חדרים, ולחפש חדרים על פי קריטריונים שונים"
+                }
+                FB.newSimpleMessage(recipient, message).then(resp => {
+                    FB.newSimpleMessage(recipient, "בואו נתחיל!").then(r => {
+
+                        Bot.drawMenu(recipient, context).then(res => {
+                            // Bot.sessions[sessionid].context.is_started = true;
+                        })
+                    });
                 })
             });
-        })
-
-    })
+        }, 3000);
     });
 }
 
@@ -126,7 +123,7 @@ function createLocationQR() {
     data["חיפה"] = "LOCATION_QR6";
     data["צפון"] = "LOCATION_QR7";
 
-    return Bot.createQuickReplies(data,true);
+    return Bot.createQuickReplies(data, true);
 }
 
 function createGroupSizeQR() {
@@ -139,7 +136,7 @@ function createGroupSizeQR() {
     data["שלישיה"] = "GROUP_SIZE_QR6";
     data["זוג"] = "GROUP_SIZE_QR7";
 
-     return Bot.createQuickReplies(data);
+    return Bot.createQuickReplies(data);
 }
 
 function createCompanyQR() {
@@ -158,7 +155,6 @@ function createCompanyQR() {
 
     return Bot.createQuickReplies(data);
 }
-
 
 
 function askForLocation(recipient) {
@@ -183,134 +179,163 @@ function askForCompany(recipient) {
 }
 
 
-
-function resetSession(recipient) {
-    Bot.findOrCreateSession(recipient).then(sessionid => {
-
-        let context = Bot.sessions[sessionid].context;
-        delete context.location;
-        delete context.num_of_people;
-        delete context.room_list;
-        delete context.room_id;
-        delete context.company_name;
-        delete context.lat;
-        delete context.lon;``
-        Bot.createGeneralMenu(recipient).then(menu => {
-            FB.newStructuredMessage(recipient, menu)
-        })
-    });
+function resetSession(context, recipient) {
+    delete context.location;
+    delete context.num_of_people;
+    delete context.room_list;
+    delete context.room_id;
+    delete context.company_name;
+    delete context.lat;
+    delete context.lon;
+    Bot.createGeneralMenu(context).then(menu => {
+        FB.newStructuredMessage(recipient, menu)
+    })
 }
-
 
 
 app.post('/webhook', function (req, res) {
     let entry = FB.getMessageEntry(req.body);
     res.sendStatus(200);
     let recipient = entry.sender.id;
-    Bot.findOrCreateSession(recipient).then(sessionId => {
+    FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
+        FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
+            Bot.findOrCreateSession(recipient).then(sessionId => {
 
-        let context = Bot.sessions[sessionId].context;
-        if (entry && entry.postback) {
-            if (context.is_started === undefined && entry.postback.payload === Config.GET_STARTED_PAYLOAD) {
+                let context = Bot.sessions[sessionId].context;
+                if (entry && entry.postback) {
+                    if (context.is_started === undefined && entry.postback.payload === Config.GET_STARTED_PAYLOAD) {
 
-                FB.getUserProfile(recipient).then(profile => {
-                    sendStartMessages(entry, profile);
-                });
-                // if it is a location callback:
-            } else if (entry.postback.payload === "SEARCH_BY_LOCATION") {
-                context.state = "LOCATION";
-                askForLocation(recipient);
-            } else if (entry.postback.payload === "SEARCH_BY_GROUP_SIZE") {
-                context.state = "GROUP_SIZE";
-                askForGroupSize(recipient);
-            } else if (entry.postback.payload === "SEARCH_BY_COMPANY") {
-                context.state = "SEARCH_BY_COMPANY";
-                askForCompany(recipient);
-
-            } else if (entry.postback.payload === "NEW_SEARCH") {
-                delete context.state;
-                resetSession(recipient);
-            } else if( entry.postback.payload.startsWith('MORE_INFO_')){
-                let room_name = entry.postback.payload.substring('MORE_INFO_'.length);
-                Bot.handleMoreInfo(recipient,room_name)
-            }
-        } else if (entry && entry.message && entry.message.quick_reply) {
-            if (entry.message.quick_reply.payload.startsWith("LOCATION_QR")) {
-                console.log("adding location: " + entry.message.text);
-                context.location = entry.message.text;
-                delete context.lat;
-                delete context.lon;
-
-                Bot.findEscapeRoomByContext(context).then(context => {
-                    context.state = "";
-                    Bot.displayResponse(recipient, context);
-
-                }).catch(err => {
-                    Bot.displayErrorMessage(recipient,context).then(r => {
-                        askForLocation(recipient);
-                    });
-                });
-            } else if (entry.message.quick_reply.payload.startsWith("GROUP_SIZE_QR")) {
-                console.log("adding group size: " + entry.message.text);
-                context.num_of_people = entry.message.text;
-                Bot.findEscapeRoomByContext(context).then(context => {
-                    context.state = "";
-                   Bot.displayResponse(recipient, context);
-                }).catch(err => {
-                    Bot.displayErrorMessage(recipient,context).then(r => {
-                      askForGroupSize(recipient);
-                    })
-                });
-            } else if (entry.message.quick_reply.payload.startsWith("COMPANY_QR")) {
-                console.log("adding company: " + entry.message.text);
-                context.company_name = entry.message.text;
-                Bot.findEscapeRoomByContext(context).then(context => {
-                    context.state = "";
-                    Bot.displayResponse(recipient, context);
-                }).catch(err => {
-                    Bot.displayErrorMessage(recipient,context).then(r => {
-                        askForCompany(recipient);
-                    })
-                });
-            }
-
-        } else if (entry && entry.message) {
-            if (entry.message.attachments) {
-                if(entry.message.attachments[0] && entry.message.attachments[0].payload && entry.message.attachments[0].payload.coordinates){
-                    let lat = entry.message.attachments[0].payload.coordinates.lat;
-                    let lon = entry.message.attachments[0].payload.coordinates.long;
-                    console.log("received user location: " + lat + "," + lon);
-                    context.lat = lat;
-                    context.lon = lon;
-                    delete context.location;
-                    Bot.findEscapeRoomByContext(context).then(context => {
-                        context.state = "";
-                        Bot.displayResponse(recipient, context);
-                    }).catch(err => {
-                        Bot.displayErrorMessage(recipient,context).then(r => {
-                            askForLocation(recipient);
+                        FB.getUserProfile(recipient).then(profile => {
+                            sendStartMessages(context, entry, profile);
                         });
-                    });
-                }else {
-                    // NOT SMART ENOUGH FOR ATTACHMENTS YET
-                    FB.newSimpleMessage(recipient, "זה מעניין!")
+                        // if it is a location callback:
+                    } else if (entry.postback.payload === "SEARCH_BY_LOCATION") {
+                        context.state = "LOCATION";
+                        askForLocation(recipient);
+                    } else if (entry.postback.payload === "SEARCH_BY_GROUP_SIZE") {
+                        context.state = "GROUP_SIZE";
+                        askForGroupSize(recipient);
+                    } else if (entry.postback.payload === "SEARCH_BY_COMPANY") {
+                        context.state = "SEARCH_BY_COMPANY";
+                        askForCompany(recipient);
+
+                    } else if (entry.postback.payload === "NEW_SEARCH") {
+                        delete context.state;
+                        resetSession(context, recipient);
+                    } else if (entry.postback.payload.startsWith('MORE_INFO_')) {
+                        let room_name = entry.postback.payload.substring('MORE_INFO_'.length);
+                        Bot.handleMoreInfo(context, recipient, room_name)
+                    } else if (entry.postback.payload.startsWith('MORE_ROOMS_')) {
+                        setTimeout(function () {
+                            FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
+                                let slice_index = entry.postback.payload.substring('MORE_ROOMS_'.length);
+                                if(context.room_list.length - slice_index === 1){
+                                    FB.newStructuredMessage(recipient, context.room_list.slice(slice_index))
+                                } else {
+                                    FB.newListMessage(recipient, context.room_list, Number(slice_index))
+                                }
+                            }, 5000)
+                        });
+                    } else if (entry.postback.payload === 'MORE_SEARCH_OPTIONS'){
+                        setTimeout(function() {
+                            FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש:").then(r => {
+                            Bot.createGeneralMenu(context).then(menu => {
+                                FB.newStructuredMessage(recipient, menu);
+                            });
+                        })
+                    }, 3000);
+
+                    } else if (entry.postback.payload === 'START_NEW_SEARCH'){
+                        setTimeout(function() {
+                            FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
+                            delete context.state;
+                            resetSession(context, recipient);
+                            Bot.createGeneralMenu(context).then(menu => {
+                                FB.newStructuredMessage(recipient, menu);
+                            })
+                        }) }, 3000);
+                    }
+
+                } else if (entry && entry.message && entry.message.quick_reply) {
+                    if (entry.message.quick_reply.payload.startsWith("LOCATION_QR")) {
+                        console.log("adding location: " + entry.message.text);
+                        context.location = entry.message.text;
+                        delete context.lat;
+                        delete context.lon;
+
+                        Bot.findEscapeRoomByContext(context).then(context => {
+                            context.state = "";
+                            Bot.displayResponse(recipient, context);
+
+                        }).catch(err => {
+                            Bot.displayErrorMessage(recipient, context).then(r => {
+                                askForLocation(recipient);
+                            });
+                        });
+                    } else if (entry.message.quick_reply.payload.startsWith("GROUP_SIZE_QR")) {
+                        console.log("adding group size: " + entry.message.text);
+                        context.num_of_people = entry.message.text;
+                        Bot.findEscapeRoomByContext(context).then(context => {
+                            context.state = "";
+                            Bot.displayResponse(recipient, context);
+                        }).catch(err => {
+                            Bot.displayErrorMessage(recipient, context).then(r => {
+                                askForGroupSize(recipient);
+                            })
+                        });
+                    } else if (entry.message.quick_reply.payload.startsWith("COMPANY_QR")) {
+                        console.log("adding company: " + entry.message.text);
+                        context.company_name = entry.message.text;
+                        Bot.findEscapeRoomByContext(context).then(context => {
+                            context.state = "";
+                            Bot.displayResponse(recipient, context);
+                        }).catch(err => {
+                            Bot.displayErrorMessage(recipient, context).then(r => {
+                                askForCompany(recipient);
+                            })
+                        });
+                    }
+
+                } else if (entry && entry.message) {
+                    if (entry.message.attachments) {
+                        if (entry.message.attachments[0] && entry.message.attachments[0].payload && entry.message.attachments[0].payload.coordinates) {
+                            let lat = entry.message.attachments[0].payload.coordinates.lat;
+                            let lon = entry.message.attachments[0].payload.coordinates.long;
+                            console.log("received user location: " + lat + "," + lon);
+                            context.lat = lat;
+                            context.lon = lon;
+                            delete context.location;
+                            Bot.findEscapeRoomByContext(context).then(context => {
+                                context.state = "";
+                                Bot.displayResponse(recipient, context);
+                            }).catch(err => {
+                                Bot.displayErrorMessage(recipient, context).then(r => {
+                                    askForLocation(recipient);
+                                });
+                            });
+                        } else {
+                            // NOT SMART ENOUGH FOR ATTACHMENTS YET
+                            FB.newSimpleMessage(recipient, "זה מעניין!")
+                        }
+                    } else {
+                        handleFBMessage(sessionId, context, entry);
+                    }
+
                 }
-            } else {
-                handleFBMessage(entry);
-            }
-
-        }
 
 
+            });
+        });
     });
 });
+
 
 app.get('/generatewaze', function (req, res) {
     let lat = req.query['lat'];
     let lon = req.query['lon'];
 
     if (lat && lon) {
-        Bot.generateWazeLink(lat,lon).then(links => {
+        Bot.generateWazeLink(lat, lon).then(links => {
             res.send(links)
         })
 

@@ -17,6 +17,7 @@
     "node-emoji": "^1.5.1",
     "node-wit": "^4.2.0",
     "request": "^2.79.0",
+    "shuffle-array": "^1.0.1",
     "tinyurl": "^1.1.2"
   },
   "devDependencies": {},

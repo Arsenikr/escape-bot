@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const request = require('request');
 const Config = require('../config');
@@ -64,7 +64,7 @@ function newSimpleMessage(recipientId, msg,quick_replies) {
         });
 }
 
-    function newStructuredMessage(recipientId, elements) {
+    function newListMessage(recipientId, elements,slice) {
 
         return new Promise(
             function (resolve, reject) {
@@ -77,17 +77,28 @@ function newSimpleMessage(recipientId, msg,quick_replies) {
                     }
                 };
 
-                if (elements && elements.length > 0) {
+                if (elements && elements.length > 0 && slice < elements.length) {
+                    let sliced_elements = elements.slice(slice,slice+4);
                     let message = {
                         attachment: {
                             type: 'template',
                             payload: {
-                                template_type: 'generic',
-                                image_aspect_ratio: 'horizontal',
-                                elements: elements
+                                template_type: 'list',
+                                top_element_style: 'compact',
+                                elements: sliced_elements
+
                             }
                         }
                     };
+                    if((slice+4) < elements.length){
+                        message.attachment.payload.buttons = [
+                            {
+                                title: "הצג עוד חדרים",
+                                "type": "postback",
+                                "payload": "MORE_ROOMS_" + (slice+4)
+                            }
+                        ]
+                    }
                     opts.form.message = message;
 
                     newRequest(opts, function (err, resp, data) {
@@ -99,11 +110,73 @@ function newSimpleMessage(recipientId, msg,quick_replies) {
                     });
 
                 }
-
-
             });
 }
 
+function newStructuredMessage(recipientId, elements) {
+
+    return new Promise(
+        function (resolve, reject) {
+
+            let opts = {
+                form: {
+                    recipient: {
+                        id: recipientId
+                    }
+                }
+            };
+
+            if (elements && elements.length > 0) {
+                let message = {
+                    attachment: {
+                        type: 'template',
+                        payload: {
+                            template_type: 'generic',
+                            image_aspect_ratio: 'horizontal',
+                            elements: elements
+                        }
+                    }
+                };
+                opts.form.message = message;
+
+                newRequest(opts, function (err, resp, data) {
+                    if (err) {
+                        reject(err || data.error && data.error.message)
+                    } else {
+                        resolve(data)
+                    }
+                });
+
+            }
+
+
+        });
+}
+
+function newSenderAction(recipientId, action) {
+    return new Promise(
+        function (resolve, reject) {
+
+            let opts = {
+                form: {
+                    recipient: {
+                        id: recipientId
+                    }
+                }
+            };
+
+            opts.form.sender_action = action;
+
+            newRequest(opts, function (err, resp, data) {
+                if (err) {
+                    reject(err || data.error && data.error.message)
+                } else {
+                    resolve(data)
+                }
+            });
+
+        });
+}
 
 
 // PARSE A FACEBOOK MESSAGE to get user, message body, or attachment
@@ -125,6 +198,8 @@ module.exports = {
     newRequest: newRequest,
     newSimpleMessage: newSimpleMessage,
     newStructuredMessage: newStructuredMessage,
+    newListMessage: newListMessage,
+    newSenderAction: newSenderAction,
     getMessageEntry: getMessageEntry,
     getUserProfile: getUserProfile
 };

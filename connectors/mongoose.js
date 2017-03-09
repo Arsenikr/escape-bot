@@ -3,6 +3,7 @@
 const Config = require('../config');
 const mongoose = require('mongoose');
 const NodeCache = require( 'node-cache' );
+const shuffle = require('shuffle-array');
 
 mongoose.Promise = global.Promise;
 
@@ -101,6 +102,47 @@ const ErrorMessages = mongoose.model('error_messages', ErrorMessageSchema,'error
 
 const EasterEggCache = new NodeCache({ stdTTL: 86400});
 
+// const SessionSchema = new Schema({
+//     _id: Schema.Types.ObjectId,
+//     fbid: Number,
+//     context: Schema.Types.Mixed
+// });
+//
+// const Session = mongoose.model('sessions', SessionSchema,'sessions');
+//
+// function getSession(sessionId) {
+//     return new Promise(
+//         function (resolve, reject) {
+//             Session.find({'sessionId': sessionId}
+//                 , {
+//                     'context': true
+//                 }).then(docs => {
+//                     if(docs && docs[0]){
+//                         resolve(docs[0])
+//                     } else {
+//                         reject(sessionId)
+//                     }
+//             });
+//         });
+// }
+//
+// function createSession(sessionId,fbid) {
+//     return new Promise(
+//         function (resolve, reject) {
+//
+//             let context = JSON.stringify(
+//                 {
+//                     _fbid_: fbid
+//                 });
+//             let session = new Session({_id: sessionId,fbid: fbid, context: context});
+//
+//
+//             session.save().then(saved_session => {
+//                 resolve(saved_session);
+//             })
+//         });
+// }
+
 function chooseNDocs(docs,num_of_docs_to_choose) {
     return new Promise(
         function (resolve) {
@@ -134,45 +176,53 @@ function findRoomInDb(context) {
                 context.num_of_people = cleaned_nop;
                 console.log(cleaned_nop);
                 let loc_query = {};
-                if(cleaned_location) {
+                if (cleaned_location) {
                     loc_query = {'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}]};
-                } else if(context.lat && context.lon){
-                    loc_query = {"coordinates": {'$near': {'$geometry': {type: 'Point',coordinates: [context.lat,context.lon]},'$maxDistance': 500000}}}
+                } else if (context.lat && context.lon) {
+                    loc_query = {"coordinates": {'$near': {'$geometry': {type: 'Point', coordinates: [context.lat, context.lon]}, '$maxDistance': 500000}}}
                 }
                 let nop_query = {};
-                if(cleaned_nop > 1) nop_query = {'$and': [{"max_players": {'$gte': cleaned_nop}},{"min_players": {'$lte': cleaned_nop}}]};
+                if (cleaned_nop > 1) nop_query = {'$and': [{"max_players": {'$gte': cleaned_nop}}, {"min_players": {'$lte': cleaned_nop}}]};
                 let company_query = {};
-                if(context.company_name) company_query = {"company_name": {'$regex': context.company_name}};
+                if (context.company_name) company_query = {"company_name": {'$regex': context.company_name}};
 
-                EscapeRoom.find({'$and': [loc_query, nop_query,company_query ]}
-                , {
-                    'room_id': true,
-                    'room_name': true,
-                    'company_name': true,
-                    'website': true,
-                    'phone': true,
-                    'phone_2': true,
-                    'address': true,
-                    'latitude': true,
-                    'longitude': true,
-                    'waze_link': true,
-                    'hashtag': true
-                }).then(function (docs) {
+                EscapeRoom.find({'$and': [loc_query, nop_query, company_query]}
+                    , {
+                        'room_id': true,
+                        'room_name': true,
+                        'company_name': true,
+                        'website': true,
+                        'phone': true,
+                        'phone_2': true,
+                        'address': true,
+                        'latitude': true,
+                        'longitude': true,
+                        'waze_link': true,
+                        'hashtag': true
+                    }).then(function (docs) {
                     if (docs && docs.length > 0) {
-                        if(context.lat && context.lon) {
-                            resolve(docs.slice(0,10))
+                        if (context.lat && context.lon) {
+                            resolve(docs.slice(0, 20))
                         } else {
-                         chooseNDocs(docs).then(result =>
-                        resolve(result))
+                            // chooseNDocs(docs).then(result =>
+                            if (context.lat && context.lon){
+                                resolve(docs);
+                            } else {
+                                resolve(shuffle(docs));
+                            }
+                            // )
+                            // }
                         }
                     } else {
                         resolve(undefined)
                     }
-                })
-            }).catch(function (err) {
-                if (err) {
-                    reject(err);
-                }
+
+
+                }).catch(function (err) {
+                    if (err) {
+                        reject(err);
+                    }
+                });
             });
         });
 }
@@ -198,8 +248,10 @@ function findRoomByName(room_name) {
                 'hashtag': true
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
-                    chooseNDocs(docs).then(result =>
-                        resolve(result))
+                    // chooseNDocs(docs).then(result =>
+                    resolve(shuffle(docs));
+                    // )
+                    // }
                 } else resolve(undefined)
 
             }).catch( function (err) {
@@ -254,8 +306,10 @@ function findRoomsByCompany(company_name) {
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
                     console.log("found " + docs.length + "rooms");
-                    chooseNDocs(docs).then(result =>
-                        resolve(result))
+                    // chooseNDocs(docs).then(result =>
+                    resolve(shuffle(docs));
+                    // )
+                    // }
                 } else return resolve(undefined)
 
             }).catch(function (err) {
