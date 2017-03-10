@@ -162,6 +162,49 @@ function chooseNDocs(docs,num_of_docs_to_choose) {
         });
 }
 
+function generateQueryFromContext(context) {
+    let loc_query = {};
+    if (context.location) {
+        loc_query = {'$or': [{"location": {'$regex': context.location}}, {"region": {'$regex': context.location}}]};
+    } else if (context.lat && context.lon) {
+        loc_query = {"coordinates": {'$near': {'$geometry': {type: 'Point', coordinates: [context.lat, context.lon]}, '$maxDistance': 500000}}}
+    }
+    let nop_query = {};
+    if (context.num_of_people > 1) nop_query = {'$and': [{"max_players": {'$gte': context.num_of_people}}, {"min_players": {'$lte': context.num_of_people}}]};
+    let company_query = {};
+    if (context.company_name) company_query = {"company_name": {'$regex': context.company_name}};
+
+    let pregnant_query = {};
+    if (context.is_for_pregnant) pregnant_query = {"is_for_pregnant": Number(context.is_for_pregnant)};
+
+    let disabled_query = {};
+    if (context.is_for_disabled) disabled_query = {"is_for_disabled": Number(context.is_for_disabled)};
+
+    let kids_query = {};
+    if (context.is_for_children) kids_query = {"is_for_children": Number(context.is_for_children)};
+
+    let credit_query = {};
+    if (context.is_credit_card_accepted) credit_query = {"is_credit_card_accepted": Number(context.is_credit_card_accepted)};
+
+    let scary_query = {};
+    if (context.is_scary) scary_query = {"is_scary": Number(context.is_scary)};
+
+    let beginner_query = {};
+    if (context.is_beginner) beginner_query = {"is_beginner": Number(context.is_beginner)};
+
+    let hearing_query = {};
+    if (context.is_for_hearing_impaired) hearing_query = {"is_for_hearing_impaired": Number(context.is_for_hearing_impaired)};
+
+    let linear_query = {};
+    if (context.is_linear) linear_query = {"is_linear": Number(context.is_linear)};
+
+    let parallel_query = {};
+    if (context.is_parallel) parallel_query = {"is_parallel": Number(context.is_parallel)};
+
+    let query = {'$and': [loc_query, nop_query, company_query, pregnant_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query, linear_query, parallel_query]};
+    return query;
+}
+
 function findRoomInDb(context) {
     return new Promise(
         function (resolve, reject) {
@@ -175,18 +218,8 @@ function findRoomInDb(context) {
                 context.location = cleaned_location;
                 context.num_of_people = cleaned_nop;
                 console.log(cleaned_nop);
-                let loc_query = {};
-                if (cleaned_location) {
-                    loc_query = {'$or': [{"location": {'$regex': cleaned_location}}, {"region": {'$regex': cleaned_location}}]};
-                } else if (context.lat && context.lon) {
-                    loc_query = {"coordinates": {'$near': {'$geometry': {type: 'Point', coordinates: [context.lat, context.lon]}, '$maxDistance': 500000}}}
-                }
-                let nop_query = {};
-                if (cleaned_nop > 1) nop_query = {'$and': [{"max_players": {'$gte': cleaned_nop}}, {"min_players": {'$lte': cleaned_nop}}]};
-                let company_query = {};
-                if (context.company_name) company_query = {"company_name": {'$regex': context.company_name}};
-
-                EscapeRoom.find({'$and': [loc_query, nop_query, company_query]}
+                let query = generateQueryFromContext(context);
+                EscapeRoom.find(query
                     , {
                         'room_id': true,
                         'room_name': true,
@@ -198,7 +231,16 @@ function findRoomInDb(context) {
                         'latitude': true,
                         'longitude': true,
                         'waze_link': true,
-                        'hashtag': true
+                        'hashtag': true,
+                        'is_for_pregnant': true,
+                        'is_for_disabled': true,
+                        'is_for_children': true,
+                        'is_credit_card_accepted': true,
+                        'is_scary': true,
+                        'is_beginner': true,
+                        'is_for_hearing_impaired': true,
+                        'is_linear': true,
+                        'is_parallel': true
                     }).then(function (docs) {
                     if (docs && docs.length > 0) {
                         if (context.lat && context.lon) {
@@ -245,7 +287,16 @@ function findRoomByName(room_name) {
                 'latitude': true,
                 'longitude': true,
                 'waze_link': true,
-                'hashtag': true
+                'hashtag': true,
+                'is_for_pregnant': true,
+                'is_for_disabled': true,
+                'is_for_children': true,
+                'is_credit_card_accepted': true,
+                'is_scary': true,
+                'is_beginner': true,
+                'is_for_hearing_impaired': true,
+                'is_linear': true,
+                'is_parallel': true
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
                     // chooseNDocs(docs).then(result =>
@@ -285,13 +336,15 @@ function findAllRooms() {
         });
 }
 
-function findRoomsByCompany(company_name) {
+function findRoomsByCompany(context,company_name) {
     return new Promise(
         function (resolve, reject) {
 
             console.log("trying to find by company: " + company_name);
-
-            EscapeRoom.find({"company_name": company_name}, {
+            let old_company = context.company_name;
+            context.company_name = company_name;
+            let query = generateQueryFromContext(context);
+            EscapeRoom.find(query, {
                 'room_id': true,
                 'room_name': true,
                 'company_name': true,
@@ -302,7 +355,16 @@ function findRoomsByCompany(company_name) {
                 'latitude': true,
                 'longitude': true,
                 'waze_link': true,
-                'hashtag': true
+                'hashtag': true,
+                'is_for_pregnant': true,
+                'is_for_disabled': true,
+                'is_for_children': true,
+                'is_credit_card_accepted': true,
+                'is_scary': true,
+                'is_beginner': true,
+                'is_for_hearing_impaired': true,
+                'is_linear': true,
+                'is_parallel': true
             }).then(function (docs) {
                 if (docs && docs.length > 0) {
                     console.log("found " + docs.length + "rooms");
@@ -310,7 +372,10 @@ function findRoomsByCompany(company_name) {
                     resolve(shuffle(docs));
                     // )
                     // }
-                } else return resolve(undefined)
+                } else {
+                    context.company_name = old_company;
+                    return resolve(undefined)
+                }
 
             }).catch(function (err) {
                 return reject(err);
@@ -338,6 +403,30 @@ function findRoomsByCompany(company_name) {
             });
 
     }
+
+function findCompaniesByContext(context) {
+    return new Promise(
+        function (resolve, reject) {
+            let old_company = context.company_name;
+            delete context.company_name;
+            let query = generateQueryFromContext(context);
+            context.company_name = old_company;
+            EscapeRoom.find(query).distinct('company_name').then(function(names) {
+
+
+                if (names) {
+                    resolve(chooseNDocs(names,11))
+                } else {
+                    let msg = 'could not find company names from the context';
+                    console.log(msg);
+                    return reject(undefined)
+                }
+            }).catch(function (err) {
+                return reject(undefined);
+            });
+        });
+
+}
 
 
 function populateEasterEggsCache() {
@@ -591,6 +680,7 @@ module.exports = {
     findRoomsByCompany: findRoomsByCompany,
     findEasterEgg: findEasterEgg,
     findRoomById: findRoomById,
+    findCompaniesByContext: findCompaniesByContext,
     findErrorMessage: findErrorMessage,
     findAllRooms: findAllRooms,
     postProcess: postProcess

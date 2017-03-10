@@ -8,6 +8,7 @@ const Config = require('./config');
 const FB = require('./connectors/facebook');
 const Bot = require('./bot');
 const emoji = require('node-emoji');
+const DB = require('./connectors/mongoose');
 
 app.set('port', (process.env.PORT || 5000));
 
@@ -62,27 +63,29 @@ function handleFBMessage(sessionId, context, entry) {
                 });
             }
             else {
-                Bot.findRoomByName(message).then(function (reply) {
-                    if (reply && reply.length > 0) {
-                        FB.newStructuredMessage(recipient, reply)
-                    } else {
-                        Bot.findRoomsByCompany(message).then(function (reply) {
-                            if (reply && reply.length > 0) {
-                                context.company_name = message;
-                                context.room_list = reply;
-                                Bot.displayResponse(recipient, context);
-                            } else {
-                                Bot.read(sessionId, context, recipient, message)
-                            }
-                        });
-                    }
+                Bot.enrichFlags(context,message).then(enriched_context => {
+                    Bot.findRoomByName(enriched_context.message).then(function (reply) {
+                        if (reply && reply.length > 0) {
+                            FB.newStructuredMessage(recipient, reply)
+                        } else {
+                            Bot.findRoomsByCompany(enriched_context,enriched_context.message).then(function (reply) {
+                                if (reply && reply.length > 0) {
+                                    enriched_context.company_name = message;
+                                    enriched_context.room_list = reply;
+                                    Bot.displayResponse(recipient, enriched_context);
+                                } else {
+                                    Bot.read(sessionId, enriched_context, recipient, enriched_context.message)
+                                }
+                            });
+                        }
+                    });
                 });
             }
         }
     }).catch(err => {
         console.log(err);
         FB.newSimpleMessage(entry.sender.id, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
-            Bot.drawMenu(session_context, entry);
+            Bot.drawMenu(context, entry);
         });
     });
 }
@@ -139,21 +142,37 @@ function createGroupSizeQR() {
     return Bot.createQuickReplies(data);
 }
 
-function createCompanyQR() {
-    let data = {};
-    data["golden key"] = "COMPANY_QR1";
-    data["locked"] = "COMPANY_QR2";
-    data["rsq"] = "COMPANY_QR3";
-    data["portal y"] = "COMPANY_QR4";
-    data["inside out"] = "COMPANY_QR5";
-    data["escape city"] = "COMPANY_QR6";
-    data["questomania"] = "COMPANY_QR7";
-    data["escaperoom israel"] = "COMPANY_QR8";
-    data["brainit"] = "COMPANY_QR9";
-    data["out of the box"] = "COMPANY_QR10";
-    data["exit room"] = "COMPANY_QR11";
+function createCompanyQR(context) {
+    return new Promise(
+        function (resolve) {
 
-    return Bot.createQuickReplies(data);
+            DB.findCompaniesByContext(context).then(companies => {
+                let data = {};
+
+                if (companies && companies.length > 0) {
+                    for (let key in companies) {
+                        data[companies[key]] = "COMPANY_QR" + key;
+                    }
+                } else {
+                    // show default companies
+                    data["golden key"] = "COMPANY_QR1";
+                    data["locked"] = "COMPANY_QR2";
+                    data["rsq"] = "COMPANY_QR3";
+                    data["portal y"] = "COMPANY_QR4";
+                    data["inside out"] = "COMPANY_QR5";
+                    data["escape city"] = "COMPANY_QR6";
+                    data["questomania"] = "COMPANY_QR7";
+                    data["escaperoom israel"] = "COMPANY_QR8";
+                    data["brainit"] = "COMPANY_QR9";
+                    data["out of the box"] = "COMPANY_QR10";
+                    data["exit room"] = "COMPANY_QR11";
+                }
+
+                Bot.createQuickReplies(data).then(replies => {
+                    resolve(replies)
+                });
+            });
+        });
 }
 
 
@@ -171,10 +190,11 @@ function askForGroupSize(recipient) {
     })
 }
 
-function askForCompany(recipient) {
+function askForCompany(recipient,context) {
     FB.newSimpleMessage(recipient, "אנא הכנס שם של חברת חדרי בריחה:").then(result => {
-        let quick_answers = createCompanyQR();
+        createCompanyQR(context).then(quick_answers => {
         FB.newSimpleMessage(recipient, "או בחר חברה מהרשימה:", quick_answers)
+        });
     })
 }
 
@@ -187,6 +207,16 @@ function resetSession(context, recipient) {
     delete context.company_name;
     delete context.lat;
     delete context.lon;
+    delete context.is_for_pregnant;
+    delete context.is_for_disabled;
+    delete context.is_for_hearing_impaired;
+    delete context.is_for_children;
+    delete context.is_credit_card_accepted;
+    delete context.is_scary;
+    delete context.is_beginner;
+    delete context.is_linear;
+    delete context.is_parallel;
+
     Bot.createGeneralMenu(context).then(menu => {
         FB.newStructuredMessage(recipient, menu)
     })
@@ -217,7 +247,7 @@ app.post('/webhook', function (req, res) {
                         askForGroupSize(recipient);
                     } else if (entry.postback.payload === "SEARCH_BY_COMPANY") {
                         context.state = "SEARCH_BY_COMPANY";
-                        askForCompany(recipient);
+                        askForCompany(recipient,context);
 
                     } else if (entry.postback.payload.startsWith('MORE_INFO_')) {    FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
                         FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
