@@ -471,7 +471,12 @@ function createGeneralMenu(context) {
                     data["חיפוש לפי חברה"] = "SEARCH_BY_COMPANY";
                     images["חיפוש לפי חברה"] = "https://s12.postimg.org/caf2xxbtp/lock_1673604_640.jpg"
                 }
-                data["חיפוש חדש"] = "NEW_SEARCH";
+
+                data["סינונים נוספים"] = "MORE_FILTERS";
+                images["סינונים נוספים"] = "https://s8.postimg.org/hmfkndsit/glass_2025715_640.png";
+
+
+            data["חיפוש חדש"] = "NEW_SEARCH";
                 images["חיפוש חדש"] = 'https://s8.postimg.org/hmfkndsit/glass_2025715_640.png';
 
                 return resolve(createMenu(data, images));

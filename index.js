@@ -150,6 +150,27 @@ function createGroupSizeQR() {
         });
 }
 
+function createFiltersQR() {
+
+    return new Promise(
+        function (resolve) {
+
+            let data = {};
+            data["מקביליים"] = "ROOM_FILTER_PARALLEL";
+            data["ליניאריים"] = "ROOM_FILTER_LINEAR";
+            data["מותאמים לכבדי שמיעה"] = "ROOM_FILTER_HEARING";
+            data["מונגשים לנכים"] = "ROOM_FILTER_DISABLED";
+            data["מתאימים לנשים בהריון"] = "ROOM_FILTER_PREGNANT";
+            data["מפחידים"] = "ROOM_FILTER_SCARY";
+            data["מתאימים לילדים"] = "ROOM_FILTER_CHILDREN";
+            data["מתאימים למנוסים"] = "ROOM_FILTER_BEGINNER";
+            data["מתאימים למתחילים"] = "ROOM_FILTER_EXPERIENCED";
+
+            resolve(Bot.createQuickReplies(data))
+        });
+
+}
+
 function createCompanyQR(context) {
     return new Promise(
         function (resolve) {
@@ -208,6 +229,13 @@ function askForCompany(recipient,context) {
     })
 }
 
+function askForMoreFilters(recipient,context) {
+        createFiltersQR(context).then(quick_answers => {
+            FB.newSimpleMessage(recipient, "מצא חדרים:", quick_answers)
+        })
+}
+
+
 
 function resetSession(context, recipient) {
     delete context.location;
@@ -258,7 +286,9 @@ app.post('/webhook', function (req, res) {
                     } else if (entry.postback.payload === "SEARCH_BY_COMPANY") {
                         context.state = "SEARCH_BY_COMPANY";
                         askForCompany(recipient,context);
-
+                    } else if (entry.postback.payload === "MORE_FILTERS") {
+                        context.state = "MORE_FILTERS";
+                        askForMoreFilters(recipient,context);
                     } else if (entry.postback.payload.startsWith('MORE_INFO_')) {    FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
                         FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
 
@@ -341,6 +371,42 @@ app.post('/webhook', function (req, res) {
 
                                 let room_name = entry.message.quick_reply.payload.substring("MORE_INFO2_".length);
                                 Bot.handleMoreInfo2(context, recipient, room_name)
+                            });
+                        });
+                    } else if (entry.message.quick_reply.payload.startsWith("ROOM_FILTER_")) {
+                        FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
+                            FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
+                                let filter = entry.message.quick_reply.payload.substring("ROOM_FILTER_".length);
+
+                                if(filter === "PARALLEL") {
+                                    context.is_parallel = true;
+                                } else if (filter === "LINEAR") {
+                                    context.is_linear = true;
+                                } else if (filter === "HEARING") {
+                                    context.is_for_hearing_impaired = true;
+                                } else if (filter === "DISABLED") {
+                                    context.is_for_disabled = true;
+                                } else if (filter === "PREGNANT") {
+                                    context.is_for_pregnant = true;
+                                } else if (filter === "SCARY") {
+                                    context.is_scary = true;
+                                } else if (filter === "CHILDREN") {
+                                    context.is_for_children = true;
+                                } else if (filter === "BEGINNER") {
+                                    context.is_beginner = true;
+                                } else if (filter === "EXPERIENCED") {
+                                    context.is_beginner = false;
+                                }
+
+                                Bot.findEscapeRoomByContext(context).then(context => {
+                                    context.state = "";
+                                    Bot.displayResponse(recipient, context);
+
+                                }).catch(err => {
+                                    Bot.displayErrorMessage(recipient, context).then(r => {
+                                        Bot.drawMenu(context, entry);
+                                    });
+                                });
                             });
                         });
                     }
