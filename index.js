@@ -156,15 +156,15 @@ function createFiltersQR() {
         function (resolve) {
 
             let data = {};
-            data["מקביליים"] = "ROOM_FILTER_PARALLEL";
-            data["ליניאריים"] = "ROOM_FILTER_LINEAR";
-            data["מותאמים לכבדי שמיעה"] = "ROOM_FILTER_HEARING";
-            data["מונגשים לנכים"] = "ROOM_FILTER_DISABLED";
-            data["מתאימים לנשים בהריון"] = "ROOM_FILTER_PREGNANT";
-            data["מפחידים"] = "ROOM_FILTER_SCARY";
+            data["מתאימים למתחילים"] = "ROOM_FILTER_BEGINNER";
+            data["מתאימים למנוסים"] = "ROOM_FILTER_EXPERIENCED";
             data["מתאימים לילדים"] = "ROOM_FILTER_CHILDREN";
-            data["מתאימים למנוסים"] = "ROOM_FILTER_BEGINNER";
-            data["מתאימים למתחילים"] = "ROOM_FILTER_EXPERIENCED";
+            data["מפחידים"] = "ROOM_FILTER_SCARY";
+            data["מתאימים לנשים בהריון"] = "ROOM_FILTER_PREGNANT";
+            data["מונגשים לנכים"] = "ROOM_FILTER_DISABLED";
+            data["מותאמים לכבדי שמיעה"] = "ROOM_FILTER_HEARING";
+            data["ליניאריים"] = "ROOM_FILTER_LINEAR";
+            data["מקביליים"] = "ROOM_FILTER_PARALLEL";
 
             resolve(Bot.createQuickReplies(data))
         });

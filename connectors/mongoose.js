@@ -208,7 +208,7 @@ function generateQueryFromContext(context) {
 function findRoomInDb(context) {
     return new Promise(
         function (resolve, reject) {
-
+            if(context.location.startsWith("\"")) context.location = context.location.replace("\"","");
             let cloc_promise = location_cleanup(context.location);
             let cnop_promise = nop_cleanup(context.num_of_people);
 
@@ -520,9 +520,17 @@ function location_cleanup(location) {
     return new Promise(
         function (resolve) {
             if(location) {
-                if (location.charAt(0) === 'ב')
-                    return resolve(location.substr(1));
-                else return resolve(location)
+                if(location.startsWith("בקיבוץ ") || location.startsWith("קיבוץ  ") || location.startsWith("במושב ") || location.startsWith("מושב ") || location.startsWith("בעיר ")) {
+                    location = location.replace("בקיבוץ ", "");
+                    location = location.replace("קיבוץ ", "");
+                    location = location.replace("במושב ", "");
+                    location = location.replace("מושב ", "");
+                    location = location.replace("בעיר ", "");
+                    return resolve(location)
+                } else if (location.charAt(0) === 'ב') {
+                        return resolve(location.substr(1));
+
+                    } else return resolve(location)
             } else {
                 return resolve(undefined)
             }
@@ -676,7 +684,6 @@ function postProcess() {
 module.exports = {
     findRoomInDb: findRoomInDb,
     findRoomByName: findRoomByName,
-    location_cleanup: location_cleanup,
     findRoomsByCompany: findRoomsByCompany,
     findEasterEgg: findEasterEgg,
     findRoomById: findRoomById,
