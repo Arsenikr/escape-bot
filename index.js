@@ -117,6 +117,9 @@ function sendStartMessages(context, entry, profile) {
 }
 
 function createLocationQR() {
+    return new Promise(
+        function (resolve) {
+
     let data = {};
     data["ב״שׁ"] = "LOCATION_QR1";
     data["דרום"] = "LOCATION_QR2";
@@ -126,20 +129,25 @@ function createLocationQR() {
     data["חיפה"] = "LOCATION_QR6";
     data["צפון"] = "LOCATION_QR7";
 
-    return Bot.createQuickReplies(data, true);
+    resolve(Bot.createQuickReplies(data, true))
+    });
 }
 
 function createGroupSizeQR() {
-    let data = {};
-    data["שמיניה"] = "GROUP_SIZE_QR1";
-    data["שביעיה"] = "GROUP_SIZE_QR2";
-    data["שישיה"] = "GROUP_SIZE_QR3";
-    data["חמישיה"] = "GROUP_SIZE_QR4";
-    data["רביעיה"] = "GROUP_SIZE_QR5";
-    data["שלישיה"] = "GROUP_SIZE_QR6";
-    data["זוג"] = "GROUP_SIZE_QR7";
+    return new Promise(
+        function (resolve) {
 
-    return Bot.createQuickReplies(data);
+            let data = {};
+            data["שמיניה"] = "GROUP_SIZE_QR1";
+            data["שביעיה"] = "GROUP_SIZE_QR2";
+            data["שישיה"] = "GROUP_SIZE_QR3";
+            data["חמישיה"] = "GROUP_SIZE_QR4";
+            data["רביעיה"] = "GROUP_SIZE_QR5";
+            data["שלישיה"] = "GROUP_SIZE_QR6";
+            data["זוג"] = "GROUP_SIZE_QR7";
+
+            resolve(Bot.createQuickReplies(data))
+        });
 }
 
 function createCompanyQR(context) {
@@ -178,15 +186,17 @@ function createCompanyQR(context) {
 
 function askForLocation(recipient) {
     FB.newSimpleMessage(recipient, "אנא הכנס מיקום מבוקש:").then(result => {
-        let quick_answers = createLocationQR();
-        FB.newSimpleMessage(recipient, "או בחר מיקום מהרשימה:", quick_answers)
+        createLocationQR().then(quick_answers => {
+            FB.newSimpleMessage(recipient, "או בחר מיקום מהרשימה:", quick_answers)
+        });
     })
 }
 
 function askForGroupSize(recipient) {
     FB.newSimpleMessage(recipient, "אנא הכנס מספר אנשים:").then(result => {
-        let quick_answers = createGroupSizeQR();
-        FB.newSimpleMessage(recipient, "או בחר הרכב קבוצה מהרשימה:", quick_answers)
+        createGroupSizeQR().then(quick_answers => {
+            FB.newSimpleMessage(recipient, "או בחר הרכב קבוצה מהרשימה:", quick_answers)
+        });
     })
 }
 
