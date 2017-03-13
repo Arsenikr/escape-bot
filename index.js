@@ -129,7 +129,9 @@ function createLocationQR() {
     data["חיפה"] = "LOCATION_QR6";
     data["צפון"] = "LOCATION_QR7";
 
-    resolve(Bot.createQuickReplies(data, true))
+            Bot.createQuickReplies(data).then(replies => {
+                resolve(replies)
+            });
     });
 }
 
@@ -146,7 +148,9 @@ function createGroupSizeQR() {
             data["שלישיה"] = "GROUP_SIZE_QR6";
             data["זוג"] = "GROUP_SIZE_QR7";
 
-            resolve(Bot.createQuickReplies(data))
+            Bot.createQuickReplies(data).then(replies => {
+                resolve(replies)
+            });
         });
 }
 
@@ -166,7 +170,9 @@ function createFiltersQR() {
             data["ליניאריים"] = "ROOM_FILTER_LINEAR";
             data["מקביליים"] = "ROOM_FILTER_PARALLEL";
 
-            resolve(Bot.createQuickReplies(data))
+            Bot.createQuickReplies(data).then(replies => {
+                resolve(replies)
+            });
         });
 
 }

@@ -299,8 +299,6 @@ function findEscapeRoomByContext(context) {
         });
 }
 
-
-
 function createRoomsList(context,response) {
     let list = [];
 
@@ -718,10 +716,12 @@ function handleMoreInfo(context, recipient, room_id) {
                                 FB.newSimpleMessage(recipient, merged_msg).then(r =>{
                                     let data = {};
                                     data["אני רוצה לדעת עוד..."] = "MORE_INFO2_" + room_id;
-                                    let qr = createQuickReplies(data);
-                                    FB.newSimpleMessage(recipient, "רוצה לדעת עוד?", qr).then(r => {
-                                        resolve(context);
-                                    });
+                                    createQuickReplies(data).then(qr => {
+                                        FB.newSimpleMessage(recipient, "רוצה לדעת עוד?", qr).then(r => {
+                                            resolve(context);
+                                        });
+
+                                    })
                                 });
                             }, 3000)
                         });
