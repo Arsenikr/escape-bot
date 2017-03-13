@@ -92,10 +92,10 @@ function handleFBMessage(sessionId, context, entry) {
 
 function sendStartMessages(context, entry, profile) {
     setTimeout(function () {
+        let recipient = entry.sender.id;
         FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
 
             let fname = profile.first_name || "בוטן";
-            let recipient = entry.sender.id;
             FB.newSimpleMessage(recipient, "שלום " + fname + "! אני בוט שיודע לתת מידע על חדרי בריחה בישראל").then(resp => {
                 let message = "";
                 if (profile.gender && profile.gender === "female") {
