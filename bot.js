@@ -77,7 +77,7 @@ let actions = {
     },
 
 
-    findEscapeRoom({context, entities}) {
+    findEscapeRoom({sessionId,context, entities}) {
         return new Promise(function (resolve, reject) {
             let location = firstEntityValue(entities, 'location');
             let num_of_people = firstEntityValue(entities, 'math_expression');
@@ -92,6 +92,8 @@ let actions = {
             if (num_of_people) {
                 context.num_of_people = num_of_people;
             }
+
+            sessions[sessionId].context = context;
 
             return resolve(findEscapeRoomByContext(context))
 
@@ -135,9 +137,9 @@ function read(sessionId,context,sender, message) {
                     }
                     setTimeout(function () {
                         FB.newSenderAction(sender, Config.TYPING_OFF).then(_ => {
-
-                            FB.newSimpleMessage(sender, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
-                                createGeneralMenu(context).then(menu => {
+                            let new_context = sessions[sessionId].context;
+                            displayErrorMessage(sender,new_context).then(ans => {
+                                createGeneralMenu(new_context).then(menu => {
                                     FB.newStructuredMessage(sender, menu);
                                 })
                             })
@@ -512,7 +514,7 @@ function displayResponse(recipient, context) {
         setTimeout(function() {
         FB.newSenderAction(recipient,Config.TYPING_OFF).then(_ => {
 
-            let msg = "הנה רשימה של חדרים ";
+            let msg = "הנה רשימה של חדרים";
 
             if (context.is_beginner) {
                 let bool = Boolean(context.is_beginner);
@@ -582,7 +584,7 @@ function displayResponse(recipient, context) {
             }
 
             if (context.company_name) {
-                msg += " של חברת " + context.company_name + " ";
+                msg += " של חברת " + context.company_name;
             }
             if (context.location) {
                 msg += " ב" + context.location;
@@ -636,6 +638,7 @@ function displayErrorMessage(recipient, context) {
                     if (context.num_of_people && !(context.num_of_people === 1)) {
                         msg += " ל" + context.num_of_people + " אנשים"
                     }
+                    msg += " נסה שוב או התחל חיפוש חדש";
                     FB.newSimpleMessage(recipient, msg).then(r => {
                         return resolve(context)
                     })
