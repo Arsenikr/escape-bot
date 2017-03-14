@@ -393,6 +393,15 @@ function createHashtagItem(hashtag) {
     }
 }
 
+function createVideoItem() {
+    return {
+        title: "סרטון הדרכה קצר על הבוט: ",
+        image_url: "https://scontent-frt3-1.xx.fbcdn.net/v/t31.0-8/16422306_212997062506914_6981554859388634041_o.jpg",
+        item_url: "https:\/\/www.facebook.com\/escaperoombot\/videos\/233950753744878\/"
+    }
+}
+
+
 function createWazeItem(url) {
     return {
         title: "לינק לwaze:",
@@ -471,7 +480,7 @@ function createGeneralMenu(context) {
                 }
 
                 data["סינונים נוספים"] = "MORE_FILTERS";
-                images["סינונים נוספים"] = "https://s8.postimg.org/hmfkndsit/glass_2025715_640.png";
+                images["סינונים נוספים"] = "https://s22.postimg.org/3nxe2ovq9/labyrinth_2037903_640.jpg";
 
 
             data["חיפוש חדש"] = "NEW_SEARCH";
@@ -880,6 +889,7 @@ module.exports = {
     findEscapeRoomByContext: findEscapeRoomByContext,
     createQuickReplies: createQuickReplies,
     createMenu: createMenu,
+    createVideoItem: createVideoItem,
     createGeneralMenu: createGeneralMenu,
     drawMenu: drawMenu,
     displayResponse: displayResponse,

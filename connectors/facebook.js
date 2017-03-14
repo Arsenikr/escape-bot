@@ -153,6 +153,42 @@ function newStructuredMessage(recipientId, elements) {
         });
 }
 
+function newVideoMessage(recipientId, url) {
+
+    return new Promise(
+        function (resolve, reject) {
+
+            let opts = {
+                form: {
+                    recipient: {
+                        id: recipientId
+                    }
+                }
+            };
+
+                let message = {
+                    attachment: {
+                        type: 'video',
+                        payload: {
+                            url: url
+                        }
+                    }
+                };
+                opts.form.message = message;
+
+                newRequest(opts, function (err, resp, data) {
+                    if (err) {
+                        reject(err || data.error && data.error.message)
+                    } else {
+                        resolve(data)
+                    }
+                });
+
+
+
+        });
+}
+
 function newSenderAction(recipientId, action) {
     return new Promise(
         function (resolve, reject) {
@@ -199,6 +235,7 @@ module.exports = {
     newSimpleMessage: newSimpleMessage,
     newStructuredMessage: newStructuredMessage,
     newListMessage: newListMessage,
+    newVideoMessage: newVideoMessage,
     newSenderAction: newSenderAction,
     getMessageEntry: getMessageEntry,
     getUserProfile: getUserProfile

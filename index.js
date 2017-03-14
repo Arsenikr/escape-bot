@@ -104,15 +104,26 @@ function sendStartMessages(context, entry, profile) {
                     message = "אתה יכול לשאול אותי מידע על חדרים, ולחפש חדרים על פי קריטריונים שונים"
                 }
                 FB.newSimpleMessage(recipient, message).then(resp => {
-                    FB.newSimpleMessage(recipient, "בואו נתחיל!").then(r => {
+                    setTimeout(function () {
 
-                        Bot.drawMenu(recipient, context).then(res => {
-                            // Bot.sessions[sessionid].context.is_started = true;
-                        })
+                        let elements = [];
+
+                    let videoItem = Bot.createVideoItem();
+                    elements.push(videoItem);
+
+                    FB.newStructuredMessage(recipient, elements).then(r => {
+
+                        FB.newSimpleMessage(recipient, "בואו נתחיל!").then(r => {
+
+                            Bot.drawMenu(recipient, context).then(res => {
+                                // Bot.sessions[sessionid].context.is_started = true;
+                            })
+                        });
                     });
-                })
-            });
-        }, 3000);
+                    }, 3000);
+                });
+            }, 3000);
+        });
     });
 }
 
