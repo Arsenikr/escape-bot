@@ -63,12 +63,12 @@ function handleFBMessage(sessionId, context, entry) {
                 });
             }
             else {
-                Bot.enrichFlags(context,message).then(enriched_context => {
+                Bot.enrichFlags(context, message).then(enriched_context => {
                     Bot.findRoomByName(enriched_context.message).then(function (reply) {
                         if (reply && reply.length > 0) {
                             FB.newStructuredMessage(recipient, reply)
                         } else {
-                            Bot.findRoomsByCompany(enriched_context,enriched_context.message).then(function (reply) {
+                            Bot.findRoomsByCompany(enriched_context, enriched_context.message).then(function (reply) {
                                 if (reply && reply.length > 0) {
                                     enriched_context.company_name = message;
                                     enriched_context.room_list = reply;
@@ -108,18 +108,18 @@ function sendStartMessages(context, entry, profile) {
 
                         let elements = [];
 
-                    let videoItem = Bot.createVideoItem();
-                    elements.push(videoItem);
+                        let videoItem = Bot.createVideoItem();
+                        elements.push(videoItem);
 
-                    FB.newStructuredMessage(recipient, elements).then(r => {
+                        FB.newStructuredMessage(recipient, elements).then(r => {
 
-                        FB.newSimpleMessage(recipient, "בואו נתחיל!").then(r => {
+                            FB.newSimpleMessage(recipient, "בואו נתחיל!").then(r => {
 
-                            Bot.drawMenu(recipient, context).then(res => {
-                                // Bot.sessions[sessionid].context.is_started = true;
-                            })
+                                Bot.drawMenu(recipient, context).then(res => {
+                                    // Bot.sessions[sessionid].context.is_started = true;
+                                })
+                            });
                         });
-                    });
                     }, 3000);
                 });
             }, 3000);
@@ -131,19 +131,19 @@ function createLocationQR() {
     return new Promise(
         function (resolve) {
 
-    let data = {};
-    data["ב״שׁ"] = "LOCATION_QR1";
-    data["דרום"] = "LOCATION_QR2";
-    data["ראשון לציון"] = "LOCATION_QR3";
-    data["ת״א"] = "LOCATION_QR4";
-    data["מרכז"] = "LOCATION_QR5";
-    data["חיפה"] = "LOCATION_QR6";
-    data["צפון"] = "LOCATION_QR7";
+            let data = {};
+            data["ב״שׁ"] = "LOCATION_QR1";
+            data["דרום"] = "LOCATION_QR2";
+            data["ראשון לציון"] = "LOCATION_QR3";
+            data["ת״א"] = "LOCATION_QR4";
+            data["מרכז"] = "LOCATION_QR5";
+            data["חיפה"] = "LOCATION_QR6";
+            data["צפון"] = "LOCATION_QR7";
 
             Bot.createQuickReplies(data).then(replies => {
                 resolve(replies)
             });
-    });
+        });
 }
 
 function createGroupSizeQR() {
@@ -238,20 +238,19 @@ function askForGroupSize(recipient) {
     })
 }
 
-function askForCompany(recipient,context) {
+function askForCompany(recipient, context) {
     FB.newSimpleMessage(recipient, "אנא הכנס שם של חברת חדרי בריחה:").then(result => {
         createCompanyQR(context).then(quick_answers => {
-        FB.newSimpleMessage(recipient, "או בחר חברה מהרשימה:", quick_answers)
+            FB.newSimpleMessage(recipient, "או בחר חברה מהרשימה:", quick_answers)
         });
     })
 }
 
-function askForMoreFilters(recipient,context) {
-        createFiltersQR(context).then(quick_answers => {
-            FB.newSimpleMessage(recipient, "מצא חדרים:", quick_answers)
-        })
+function askForMoreFilters(recipient, context) {
+    createFiltersQR(context).then(quick_answers => {
+        FB.newSimpleMessage(recipient, "מצא חדרים:", quick_answers)
+    })
 }
-
 
 
 function resetSession(context, recipient) {
@@ -302,22 +301,23 @@ app.post('/webhook', function (req, res) {
                         askForGroupSize(recipient);
                     } else if (entry.postback.payload === "SEARCH_BY_COMPANY") {
                         context.state = "SEARCH_BY_COMPANY";
-                        askForCompany(recipient,context);
+                        askForCompany(recipient, context);
                     } else if (entry.postback.payload === "MORE_FILTERS") {
                         context.state = "MORE_FILTERS";
-                        askForMoreFilters(recipient,context);
-                    } else if (entry.postback.payload.startsWith('MORE_INFO_')) {    FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
-                        FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
+                        askForMoreFilters(recipient, context);
+                    } else if (entry.postback.payload.startsWith('MORE_INFO_')) {
+                        FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
+                            FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
 
-                            let room_name = entry.postback.payload.substring('MORE_INFO_'.length);
-                            Bot.handleMoreInfo(context, recipient, room_name)
+                                let room_name = entry.postback.payload.substring('MORE_INFO_'.length);
+                                Bot.handleMoreInfo(context, recipient, room_name)
+                            });
                         });
-                    });
                     } else if (entry.postback.payload.startsWith('MORE_ROOMS_')) {
                         setTimeout(function () {
                             FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
                                 let slice_index = entry.postback.payload.substring('MORE_ROOMS_'.length);
-                                if(context.room_list) {
+                                if (context.room_list) {
                                     if (context.room_list.length - slice_index === 1) {
                                         FB.newStructuredMessage(recipient, context.room_list.slice(slice_index))
                                     } else {
@@ -326,25 +326,34 @@ app.post('/webhook', function (req, res) {
                                 }
                             }, 5000)
                         });
-                    } else if (entry.postback.payload === 'MORE_SEARCH_OPTIONS'){
-                        setTimeout(function() {
+                    } else if (entry.postback.payload === 'MORE_SEARCH_OPTIONS') {
+                        setTimeout(function () {
                             FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש:").then(r => {
-                            Bot.createGeneralMenu(context).then(menu => {
-                                FB.newStructuredMessage(recipient, menu);
-                            });
-                        })
-                    }, 3000);
-
-                    } else if (entry.postback.payload === 'NEW_SEARCH' || entry.postback.payload === 'START_NEW_SEARCH'){
-                        setTimeout(function() {
-                            FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
-                            delete context.state;
-                            resetSession(context, recipient);
-                        })
+                                Bot.createGeneralMenu(context).then(menu => {
+                                    FB.newStructuredMessage(recipient, menu);
+                                });
+                            })
                         }, 3000);
-                    }
 
-                } else if (entry && entry.message && entry.message.quick_reply) {
+                    } else if (entry.postback.payload === 'NEW_SEARCH' || entry.postback.payload === 'START_NEW_SEARCH') {
+                        setTimeout(function () {
+                            FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
+                                delete context.state;
+                                resetSession(context, recipient);
+                            })
+                        }, 3000);
+                    } else if (entry.postback.payload === 'HELP') {
+                        setTimeout(function () {
+                            let elements = [];
+
+                            let videoItem = Bot.createVideoItem();
+                            elements.push(videoItem);
+
+                            FB.newStructuredMessage(recipient, elements).then(r => {
+
+                            });
+                        }, 3000);
+                    } else if (entry && entry.message && entry.message.quick_reply) {
                     if (entry.message.quick_reply.payload.startsWith("LOCATION_QR")) {
                         console.log("adding location: " + entry.message.text);
                         context.location = entry.message.text;
@@ -395,7 +404,7 @@ app.post('/webhook', function (req, res) {
                             FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
                                 let filter = entry.message.quick_reply.payload.substring("ROOM_FILTER_".length);
 
-                                if(filter === "PARALLEL") {
+                                if (filter === "PARALLEL") {
                                     context.is_parallel = true;
                                 } else if (filter === "LINEAR") {
                                     context.is_linear = true;
