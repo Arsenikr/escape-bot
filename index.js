@@ -353,6 +353,7 @@ app.post('/webhook', function (req, res) {
 
                             });
                         }, 3000);
+                    }
                     } else if (entry && entry.message && entry.message.quick_reply) {
                     if (entry.message.quick_reply.payload.startsWith("LOCATION_QR")) {
                         console.log("adding location: " + entry.message.text);
