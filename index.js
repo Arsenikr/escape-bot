@@ -363,7 +363,9 @@ app.post('/webhook', function (req, res) {
 
                         Bot.findEscapeRoomByContext(context).then(context => {
                             context.state = "";
-                            Bot.displayResponse(recipient, context);
+                            if(context && context.room_list && context.room_list.length > 0){
+                                Bot.displayResponse(recipient, context);
+                            }
 
                         }).catch(err => {
                             Bot.displayErrorMessage(recipient, context).then(r => {
@@ -375,7 +377,9 @@ app.post('/webhook', function (req, res) {
                         context.num_of_people = entry.message.text;
                         Bot.findEscapeRoomByContext(context).then(context => {
                             context.state = "";
-                            Bot.displayResponse(recipient, context);
+                            if(context && context.room_list && context.room_list.length > 0){
+                                Bot.displayResponse(recipient, context);
+                            }
                         }).catch(err => {
                             Bot.displayErrorMessage(recipient, context).then(r => {
                                 askForGroupSize(recipient);
@@ -386,7 +390,9 @@ app.post('/webhook', function (req, res) {
                         context.company_name = entry.message.text;
                         Bot.findEscapeRoomByContext(context).then(context => {
                             context.state = "";
-                            Bot.displayResponse(recipient, context);
+                            if(context && context.room_list && context.room_list.length > 0){
+                                Bot.displayResponse(recipient, context);
+                            }
                         }).catch(err => {
                             Bot.displayErrorMessage(recipient, context).then(r => {
                                 askForCompany(recipient);

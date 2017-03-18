@@ -519,7 +519,7 @@ function displayResponse(recipient, context) {
         setTimeout(function() {
         FB.newSenderAction(recipient,Config.TYPING_OFF).then(_ => {
 
-            let msg = "הנה רשימה של חדרים ";
+            let msg = "הנה רשימה של חדרים";
 
             if (context.is_beginner) {
                 let bool = Boolean(context.is_beginner);
@@ -606,9 +606,9 @@ function displayResponse(recipient, context) {
             if (context.num_of_people && !(context.num_of_people === 1)) {
                 msg += " ל" + context.num_of_people + " אנשים"
             }
-            msg = msg.replace(", ","");
+            msg = msg.replace(", "," ");
             FB.newSimpleMessage(recipient, msg).then(r => {
-                    if(context.room_list && context.room_list.length ==1){
+                    if(context.room_list && context.room_list.length == 1){
                         FB.newStructuredMessage(recipient, context.room_list).then(r => {
                             // setTimeout(function() {FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש או להתחיל חיפוש חדש:").then(r => {
                             //     createGeneralMenu(recipient).then(menu => {
