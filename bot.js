@@ -81,6 +81,9 @@ let actions = {
         return new Promise(function (resolve, reject) {
             let location = firstEntityValue(entities, 'location');
             let num_of_people = firstEntityValue(entities, 'math_expression');
+            let local_search_query = firstEntityValue(entities, 'local_search_query');
+
+            if(local_search_query && location === null) location = local_search_query;
 
             console.log("wit received: " + location);
             console.log("wit received: " + num_of_people);
@@ -291,14 +294,14 @@ function findEscapeRoomByContext(context) {
             DB.findRoomInDb(context).then(response => {
                 if(response){
                     context.room_list = createRoomsList(context,response,true);
-                    return resolve(context);
                 } else {
-                    return reject(undefined)
+                    context.room_list = undefined;
                 }
+                return resolve(context)
             }).catch(function (err) {
                 return reject(err);
             });
-        });
+        })
 }
 
 function createRoomsList(context,response) {
@@ -514,7 +517,7 @@ function displayResponse(recipient, context) {
         setTimeout(function() {
         FB.newSenderAction(recipient,Config.TYPING_OFF).then(_ => {
 
-            let msg = "הנה רשימה של חדרים";
+            let msg = "הנה רשימה של חדרים ";
 
             if (context.is_beginner) {
                 let bool = Boolean(context.is_beginner);
@@ -538,6 +541,13 @@ function displayResponse(recipient, context) {
                 msg += ", ";
                 if (!bool) msg += " לא ";
                 msg += "מפחידים";
+            }
+
+            if (context.is_double) {
+                let bool = Boolean(context.is_double);
+                msg += ", ";
+                if (!bool) msg += " לא ";
+                msg += "כפולים";
             }
 
             if (context.is_for_pregnant) {
@@ -596,7 +606,7 @@ function displayResponse(recipient, context) {
             }
             msg = msg.replace(", ","");
             FB.newSimpleMessage(recipient, msg).then(r => {
-                    if(context.room_list.length ==1){
+                    if(context.room_list && context.room_list.length ==1){
                         FB.newStructuredMessage(recipient, context.room_list).then(r => {
                             // setTimeout(function() {FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש או להתחיל חיפוש חדש:").then(r => {
                             //     createGeneralMenu(recipient).then(menu => {

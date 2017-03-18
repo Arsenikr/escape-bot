@@ -170,7 +170,21 @@ function generateQueryFromContext(context) {
         loc_query = {"coordinates": {'$near': {'$geometry': {type: 'Point', coordinates: [context.lat, context.lon]}, '$maxDistance': 500000}}}
     }
     let nop_query = {};
-    if (context.num_of_people > 1) nop_query = {'$and': [{"max_players": {'$gte': context.num_of_people}}, {"min_players": {'$lte': context.num_of_people}}]};
+    if (context.num_of_people > 1) {
+        let double_nop_query = {};
+        if(context.is_double) {
+             double_nop_query = {'$and': [{"is_double": Number(context.is_double)}, {"max_players": {'$gte': context.num_of_people / 2}}, {"min_players": {'$lte': context.num_of_people / 2}}]};
+        }
+
+        let single_nop_query = {'$and': [{"max_players": {'$gte': context.num_of_people}}, {"min_players": {'$lte': context.num_of_people}}]};
+
+        if(context.is_double) {
+            nop_query = {'or': [single_nop_query, double_nop_query]};
+        } else {
+            nop_query = single_nop_query
+        }
+    }
+
     let company_query = {};
     if (context.company_name) company_query = {"company_name": {'$regex': context.company_name}};
 
@@ -189,6 +203,10 @@ function generateQueryFromContext(context) {
     let scary_query = {};
     if (context.is_scary) scary_query = {"is_scary": Number(context.is_scary)};
 
+    let double_query = {};
+    if (context.is_double) double_query = {"is_double": Number(context.is_double)};
+
+
     let beginner_query = {};
     if (context.is_beginner) beginner_query = {"is_beginner": Number(context.is_beginner)};
 
@@ -201,14 +219,14 @@ function generateQueryFromContext(context) {
     let parallel_query = {};
     if (context.is_parallel) parallel_query = {"is_parallel": Number(context.is_parallel)};
 
-    let query = {'$and': [loc_query, nop_query, company_query, pregnant_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query, linear_query, parallel_query]};
+    let query = {'$and': [loc_query, nop_query, company_query, pregnant_query, double_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query, linear_query, parallel_query]};
     return query;
 }
 
 function findRoomInDb(context) {
     return new Promise(
         function (resolve, reject) {
-            if(context.location.startsWith("\"")) context.location = context.location.replace("\"","");
+            if(context.location && context.location.startsWith("\"")) context.location = context.location.replace("\"","");
             let cloc_promise = location_cleanup(context.location);
             let cnop_promise = nop_cleanup(context.num_of_people);
 
@@ -411,9 +429,7 @@ function findCompaniesByContext(context) {
             delete context.company_name;
             let query = generateQueryFromContext(context);
             context.company_name = old_company;
-            EscapeRoom.find(query).distinct('company_name').then(function(names) {
-
-
+            EscapeRoom.find(query).distinct('company_name.0').then(function(names) {
                 if (names) {
                     resolve(chooseNDocs(names,11))
                 } else {
@@ -541,8 +557,9 @@ function location_cleanup(location) {
 function nop_cleanup(number_of_people) {
     return new Promise(
         function (resolve) {
-
             if (number_of_people) {
+                if (isNaN(number_of_people) && number_of_people.charAt(0) === 'ל') number_of_people = number_of_people.substr(1); else number_of_people
+
                 if(!isNaN(number_of_people)){
                     return resolve(number_of_people);
                 } else {
@@ -662,7 +679,7 @@ function postProcess() {
 
                     if(docs[key].latitude && docs[key].longitude) {
                         let coords = [docs[key].latitude, docs[key].longitude];
-                        docs[key].coordinates = coords;
+                        docs[key].coordinates.coordinates = coords;
                     }
                     docs[key].save(function (err, updatedRoom) {
                         if (err){

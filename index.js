@@ -140,7 +140,7 @@ function createLocationQR() {
             data["חיפה"] = "LOCATION_QR6";
             data["צפון"] = "LOCATION_QR7";
 
-            Bot.createQuickReplies(data).then(replies => {
+            Bot.createQuickReplies(data,true).then(replies => {
                 resolve(replies)
             });
         });
@@ -423,11 +423,19 @@ app.post('/webhook', function (req, res) {
                                     context.is_beginner = true;
                                 } else if (filter === "EXPERIENCED") {
                                     context.is_beginner = false;
+                                } else if (filter === "DOUBLE") {
+                                    context.is_double = false;
                                 }
 
                                 Bot.findEscapeRoomByContext(context).then(context => {
                                     context.state = "";
-                                    Bot.displayResponse(recipient, context);
+                                    if(context.room_list && context.room_list.length > 0){
+                                        Bot.displayResponse(recipient, context);
+                                    } else {
+                                        Bot.displayErrorMessage(recipient, context).then(r => {
+                                            Bot.drawMenu(context, entry);
+                                        });
+                                    }
 
                                 }).catch(err => {
                                     Bot.displayErrorMessage(recipient, context).then(r => {
@@ -448,7 +456,13 @@ app.post('/webhook', function (req, res) {
                             delete context.location;
                             Bot.findEscapeRoomByContext(context).then(context => {
                                 context.state = "";
-                                Bot.displayResponse(recipient, context);
+                                if(context.room_list && context.room_list.length > 0){
+                                    Bot.displayResponse(recipient, context);
+                                } else {
+                                    Bot.displayErrorMessage(recipient, context).then(r => {
+                                        Bot.drawMenu(context, entry);
+                                    });
+                                }
                             }).catch(err => {
                                 Bot.displayErrorMessage(recipient, context).then(r => {
                                     askForLocation(recipient);
@@ -479,7 +493,6 @@ app.get('/generatewaze', function (req, res) {
         Bot.generateWazeLink(lat, lon).then(links => {
             res.send(links)
         })
-
     }
 });
 
