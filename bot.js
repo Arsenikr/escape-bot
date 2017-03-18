@@ -90,6 +90,8 @@ let actions = {
 
 
             if (location) {
+                delete context.lat;
+                delete context.lon;
                 context.location = location;
             }
             if (num_of_people) {
