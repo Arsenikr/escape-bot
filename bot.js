@@ -221,7 +221,7 @@ function enrichFlags(context,message) {
                 console.log("לא מפחיד");
                 context.is_scary = false;
                 // message.replace("לא מפחיד","");
-            } else if(message.includes("מפחיד") || message.includes("אימה")){
+            } else if(message.includes("מפחיד") || message.includes("אימה") || message.includes("קריפי")){
                 console.log("מפחיד");
                 context.is_scary = true;
                 // message.replace("מפחיד","");
