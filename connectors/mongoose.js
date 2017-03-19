@@ -165,7 +165,7 @@ function chooseNDocs(docs,num_of_docs_to_choose) {
 function generateQueryFromContext(context) {
     let loc_query = {};
     if (context.location) {
-        loc_query = {'$or': [{"location": {'$regex': context.location}}, {"region": {'$regex': context.location}}]};
+        loc_query = {'$or': [{"location": {'$regex': '^' + context.location + '$'}}, {"region": {'$regex': '^' + context.location + '$'}}]};
     } else if (context.lat && context.lon) {
         loc_query = {"coordinates": {'$near': {'$geometry': {type: 'Point', coordinates: [context.lat, context.lon]}, '$maxDistance': 500000}}}
     }
@@ -189,35 +189,35 @@ function generateQueryFromContext(context) {
     if (context.company_name) company_query = {"company_name": {'$regex': context.company_name}};
 
     let pregnant_query = {};
-    if (context.is_for_pregnant) pregnant_query = {"is_for_pregnant": Number(context.is_for_pregnant)};
+    if (typeof context.is_for_pregnant !== 'undefined') pregnant_query = {"is_for_pregnant": Number(context.is_for_pregnant)};
 
     let disabled_query = {};
-    if (context.is_for_disabled) disabled_query = {"is_for_disabled": Number(context.is_for_disabled)};
+    if (typeof context.is_for_disabled !== 'undefined') disabled_query = {"is_for_disabled": Number(context.is_for_disabled)};
 
     let kids_query = {};
-    if (context.is_for_children) kids_query = {"is_for_children": Number(context.is_for_children)};
+    if (typeof context.is_for_children !== 'undefined') kids_query = {"is_for_children": Number(context.is_for_children)};
 
     let credit_query = {};
-    if (context.is_credit_card_accepted) credit_query = {"is_credit_card_accepted": Number(context.is_credit_card_accepted)};
+    if (typeof context.is_credit_card_accepted !== 'undefined') credit_query = {"is_credit_card_accepted": Number(context.is_credit_card_accepted)};
 
     let scary_query = {};
-    if (context.is_scary) scary_query = {"is_scary": Number(context.is_scary)};
+    if (typeof context.is_scary !== 'undefined') scary_query = {"is_scary": Number(context.is_scary)};
 
     let double_query = {};
-    if (context.is_double) double_query = {"is_double": Number(context.is_double)};
+    if (typeof context.is_double !== 'undefined') double_query = {"is_double": Number(context.is_double)};
 
 
     let beginner_query = {};
-    if (context.is_beginner) beginner_query = {"is_beginner": Number(context.is_beginner)};
+    if (typeof context.is_beginner !== 'undefined') beginner_query = {"is_beginner": Number(context.is_beginner)};
 
     let hearing_query = {};
-    if (context.is_for_hearing_impaired) hearing_query = {"is_for_hearing_impaired": Number(context.is_for_hearing_impaired)};
+    if (typeof context.is_for_hearing_impaired !== 'undefined') hearing_query = {"is_for_hearing_impaired": Number(context.is_for_hearing_impaired)};
 
     let linear_query = {};
-    if (context.is_linear) linear_query = {"is_linear": Number(context.is_linear)};
+    if (typeof context.is_linear !== 'undefined') linear_query = {"is_linear": Number(context.is_linear)};
 
     let parallel_query = {};
-    if (context.is_parallel) parallel_query = {"is_parallel": Number(context.is_parallel)};
+    if (typeof context.is_parallel !== 'undefined') parallel_query = {"is_parallel": Number(context.is_parallel)};
 
     let query = {'$and': [loc_query, nop_query, company_query, pregnant_query, double_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query, linear_query, parallel_query]};
     return query;
@@ -233,6 +233,7 @@ function findRoomInDb(context) {
             Promise.all([cloc_promise, cnop_promise]).then(values => {
                 let cleaned_location = values[0];
                 let cleaned_nop = values[1];
+                if(context.is_for_groups) cleaned_nop = 8;
                 context.location = cleaned_location;
                 context.num_of_people = cleaned_nop;
                 console.log(cleaned_nop);
@@ -361,6 +362,8 @@ function findRoomsByCompany(context,company_name) {
             console.log("trying to find by company: " + company_name);
             let old_company = context.company_name;
             context.company_name = company_name;
+
+            if(context.is_for_groups) context.num_of_people = 8;
             let query = generateQueryFromContext(context);
             EscapeRoom.find(query, {
                 'room_id': true,
@@ -427,6 +430,7 @@ function findCompaniesByContext(context) {
         function (resolve, reject) {
             let old_company = context.company_name;
             delete context.company_name;
+            if(context.is_for_groups) context.num_of_people = 8;
             let query = generateQueryFromContext(context);
             context.company_name = old_company;
             EscapeRoom.find(query).distinct('company_name.0').then(function(names) {
@@ -542,6 +546,10 @@ function location_cleanup(location) {
                     location = location.replace("במושב ", "");
                     location = location.replace("מושב ", "");
                     location = location.replace("בעיר ", "");
+                    location = location.replace("באיזור ", "");
+                    location = location.replace("איזור ", "");
+                    location = location.replace("אזור ", "");
+                    location = location.replace("באיזור ", "");
                     return resolve(location)
                 } else if (location.charAt(0) === 'ב') {
                         return resolve(location.substr(1));

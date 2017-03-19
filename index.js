@@ -74,7 +74,19 @@ function handleFBMessage(sessionId, context, entry) {
                                     enriched_context.room_list = reply;
                                     Bot.displayResponse(recipient, enriched_context);
                                 } else {
-                                    Bot.read(sessionId, enriched_context, recipient, enriched_context.message)
+                                    if (entry.message.text && entry.message.text.startsWith("חדר בריחה ")) {
+                                        let maybe_room_name = entry.message.text.substring("חדר בריחה ".length);
+                                        Bot.findRoomByName(maybe_room_name).then(function (reply) {
+                                            if (reply && reply.length > 0) {
+                                                FB.newStructuredMessage(recipient, reply)
+                                            } else {
+                                                Bot.read(sessionId, enriched_context, recipient, enriched_context.message)
+                                           }
+                                        });
+                                    }
+                                    else {
+                                        Bot.read(sessionId, enriched_context, recipient, enriched_context.message)
+                                    }
                                 }
                             });
                         }
@@ -173,6 +185,7 @@ function createFiltersQR() {
             let data = {};
             data["מתאימים למתחילים"] = "ROOM_FILTER_BEGINNER";
             data["מתאימים למנוסים"] = "ROOM_FILTER_EXPERIENCED";
+            data["לקבוצות גדולות"] = "ROOM_FILTER_GROUP";
             data["מתאימים לילדים"] = "ROOM_FILTER_CHILDREN";
             data["מפחידים"] = "ROOM_FILTER_SCARY";
             data["מתאימים לנשים בהריון"] = "ROOM_FILTER_PREGNANT";
@@ -270,6 +283,9 @@ function resetSession(context, recipient) {
     delete context.is_beginner;
     delete context.is_linear;
     delete context.is_parallel;
+    delete context.is_double;
+    delete context.is_for_groups;
+
 
     Bot.createGeneralMenu(context).then(menu => {
         FB.newStructuredMessage(recipient, menu)
@@ -431,6 +447,8 @@ app.post('/webhook', function (req, res) {
                                     context.is_beginner = false;
                                 } else if (filter === "DOUBLE") {
                                     context.is_double = false;
+                                } else if (filter === "GROUP"){
+                                   context.is_for_groups = true;
                                 }
 
                                 Bot.findEscapeRoomByContext(context).then(context => {
@@ -452,7 +470,15 @@ app.post('/webhook', function (req, res) {
                         });
                     }
                 } else if (entry && entry.message) {
-                    if (entry.message.attachments) {
+                    if(entry.message.text && entry.message.text === "חיפוש חדש") {
+                        setTimeout(function () {
+                            FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
+                                delete context.state;
+                                resetSession(context, recipient);
+                            })
+                        }, 3000);
+
+                    } else if (entry.message.attachments) {
                         if (entry.message.attachments[0] && entry.message.attachments[0].payload && entry.message.attachments[0].payload.coordinates) {
                             let lat = entry.message.attachments[0].payload.coordinates.lat;
                             let lon = entry.message.attachments[0].payload.coordinates.long;
