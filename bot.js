@@ -424,6 +424,15 @@ function createWazeItem(url) {
     }
 }
 
+function createMoovitItem(url) {
+    return {
+        title: "לינק להגעה בתח״צ:",
+        image_url: "https://s18.postimg.org/fh07n5ny1/moovitnews.png",
+        item_url: url
+    }
+}
+
+
 
 function createMenu(data, images) {
     let list = [];
@@ -778,6 +787,13 @@ function handleMoreInfo2(context, recipient, room_id) {
                         elements.push(mapItem);
 
                         FB.newStructuredMessage(recipient, elements).then(r => {
+                            let elements = [];
+                            let mapItem = createMoovitItem(room.moovit_link);
+                            elements.push(mapItem);
+
+                            FB.newStructuredMessage(recipient, elements).then(r => {
+
+
 
                                 let msg_list = [];
                                 if (room.soldier_discount || room.soldier_discount_weekend || room.student_discount || room.student_discount_weekend || room.children_discount || room.children_discount_weekend) {
@@ -885,6 +901,7 @@ function handleMoreInfo2(context, recipient, room_id) {
                         });
 
                     });
+                    });
                 }, 3000)
             });
         });
@@ -900,6 +917,17 @@ function generateWazeLink(lat,lon) {
             })
         })
 }
+
+function generateMoovitLink(lat,lon,address) {
+    return new Promise(
+        function (resolve) {
+            TinyURL.shorten('moovit://directions?dest_lat=' + lat + '&dest_lon=' + lon + '&dest_name=' + address + '&partner_id=escapebot', function (moovitlink) {
+                console.log(moovitlink);
+                resolve(moovitlink);
+            })
+        })
+}
+
 
 
 module.exports = {
@@ -920,6 +948,7 @@ module.exports = {
     handleMoreInfo: handleMoreInfo,
     handleMoreInfo2: handleMoreInfo2,
     generateWazeLink: generateWazeLink,
+    generateMoovitLink: generateMoovitLink,
     displayErrorMessage: displayErrorMessage
 };
 
