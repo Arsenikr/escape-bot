@@ -761,8 +761,15 @@ function handleMoreInfo(context, recipient, room_id) {
                                     msg_list.push("מחיר לשחקן באמצע שבוע: " + room['price_' + context.num_of_people] + " שקלים");
                                     msg_list.push("מחיר לשחקן בסוף שבוע: " + room['weekend_price_' + context.num_of_people] + " שקלים")
                                 } else {
-                                    msg_list.push("מחיר ממוצע לשחקן באמצע שבוע: " + calculateAveragePrice(room, false) + " שקלים");
-                                    msg_list.push("מחיר ממוצע לשחקן בסוף שבוע: " + calculateAveragePrice(room, true) + " שקלים")
+                                    let weekday_avg = calculateAveragePrice(room, false);
+                                    let weekend_avg = calculateAveragePrice(room, true);
+                                    if(!isNaN(weekday_avg)){
+                                        msg_list.push("מחיר ממוצע לשחקן באמצע שבוע: " + calculateAveragePrice(room, false) + " שקלים");
+                                    }
+
+                                    if(!isNaN(weekend_avg)){
+                                        msg_list.push("מחיר ממוצע לשחקן בסוף שבוע: " + calculateAveragePrice(room, true) + " שקלים")
+                                    }
                                 }
 
                                 let merged_msg = "";
