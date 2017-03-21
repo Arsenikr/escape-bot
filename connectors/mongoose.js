@@ -44,7 +44,7 @@ const EscapeRoomsSchema = new Schema({
     moovit_link: String,
     region_splitted: String,
     region: Array,
-    number_of_same_rooms: Number,
+    is_double: Number,
     soldier_discount: Number,
     soldier_discount_weekend: Number,
     student_discount: Number,
@@ -172,19 +172,13 @@ function generateQueryFromContext(context) {
     }
     let nop_query = {};
     if (context.num_of_people > 1) {
-        let double_nop_query = {};
-        if(context.is_double) {
-             double_nop_query = {'$and': [{"is_double": Number(context.is_double)}, {"max_players": {'$gte': context.num_of_people / 2}}, {"min_players": {'$lte': context.num_of_people / 2}}]};
-        }
-
-        let single_nop_query = {'$and': [{"max_players": {'$gte': context.num_of_people}}, {"min_players": {'$lte': context.num_of_people}}]};
-
-        if(context.is_double) {
-            nop_query = {'or': [single_nop_query, double_nop_query]};
-        } else {
-            nop_query = single_nop_query
-        }
+        let single_nop_query  = {'$and': [{"min_players": {'$lte': context.num_of_people}},{"max_players": {'$gte': context.num_of_people}}]};
+        let double_nop_query  = {'$and': [{'is_double': 1},{"min_players": {'$lte': context.num_of_people}},{"max_players": {'$gte': Number(context.num_of_people/2)}}]};
+        nop_query = {'$or': [single_nop_query,double_nop_query]};
     }
+
+    let double_query = {};
+    if(context.is_double) double_query = {'is_double': 1};
 
     let company_query = {};
     if (context.company_name) company_query = {"company_name": {'$regex': context.company_name}};
@@ -203,10 +197,6 @@ function generateQueryFromContext(context) {
 
     let scary_query = {};
     if (typeof context.is_scary !== 'undefined') scary_query = {"is_scary": Number(context.is_scary)};
-
-    let double_query = {};
-    if (typeof context.is_double !== 'undefined') double_query = {"is_double": Number(context.is_double)};
-
 
     let beginner_query = {};
     if (typeof context.is_beginner !== 'undefined') beginner_query = {"is_beginner": Number(context.is_beginner)};
@@ -254,6 +244,7 @@ function findRoomInDb(context) {
                         'moovit_link': true,
                         'hashtag': true,
                         'is_for_pregnant': true,
+                        'is_double': true,
                         'is_for_disabled': true,
                         'is_for_children': true,
                         'is_credit_card_accepted': true,
@@ -310,6 +301,7 @@ function findRoomByName(room_name) {
                 'waze_link': true,
                 'moovit_link': true,
                 'hashtag': true,
+                'is_double': true,
                 'is_for_pregnant': true,
                 'is_for_disabled': true,
                 'is_for_children': true,
@@ -381,6 +373,7 @@ function findRoomsByCompany(context,company_name) {
                 'waze_link': true,
                 'moovit_link': true,
                 'hashtag': true,
+                'is_double': true,
                 'is_for_pregnant': true,
                 'is_for_disabled': true,
                 'is_for_children': true,

@@ -257,6 +257,11 @@ function enrichFlags(context,message) {
                 // message.replace("מקבילי","");
             }
 
+            if( message.includes("כפול")){
+                console.log("כפול");
+                context.is_double = true;
+                // message.replace("מקבילי","");
+            }
 
             context.message = message;
             resolve(context)
@@ -632,7 +637,7 @@ function displayResponse(recipient, context) {
     setTimeout(function() {
         FB.newSenderAction(recipient,Config.TYPING_OFF).then(_ => {
 
-            let msg = "הנה רשימה של חדרים ";
+            let msg = "הנה רשימה של חדרים";
             msg += extractResponseFromContext(context);
             FB.newSimpleMessage(recipient, msg).then(r => {
                     if(context.room_list && context.room_list.length == 1){
@@ -736,11 +741,22 @@ function handleMoreInfo(context, recipient, room_id) {
                             setTimeout(function () {
 
                                 let msg_list = [];
-                                if (room.number_of_same_rooms) {
-                                    msg_list.push("זהו חדר כפול")
+                                let msg = "זהו חדר ";
+                                if (room.is_double === 1) {
+                                    msg += "כפול "
                                 }
 
-                                if (context.num_of_people > 1 && context.num_of_people < 10) {
+                                msg += "שיכול להכיל עד ";
+
+                                if (room.is_double === 1) {
+                                    msg += room.max_players*2 + " איש."
+                                } else {
+                                    msg += room.max_players + " איש."
+                                }
+
+                                msg_list.push(msg);
+
+                                if (typeof context.is_for_groups === 'undefined'  && context.num_of_people > 1 && context.num_of_people < 10 && room['price_' + context.num_of_people] && room['weekend_price_' + context.num_of_people]) {
                                     msg_list.push("לקבוצה של " + context.num_of_people + ": ");
                                     msg_list.push("מחיר לשחקן באמצע שבוע: " + room['price_' + context.num_of_people] + " שקלים");
                                     msg_list.push("מחיר לשחקן בסוף שבוע: " + room['weekend_price_' + context.num_of_people] + " שקלים")

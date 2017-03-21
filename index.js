@@ -186,6 +186,8 @@ function createFiltersQR() {
             data["מתאימים למתחילים"] = "ROOM_FILTER_BEGINNER";
             data["מתאימים למנוסים"] = "ROOM_FILTER_EXPERIENCED";
             data["לקבוצות גדולות"] = "ROOM_FILTER_GROUP";
+            data["לקבוצות גדולות"] = "ROOM_FILTER_GROUP";
+            data["כפולים"] = "ROOM_FILTER_DOUBLE";
             data["מתאימים לילדים"] = "ROOM_FILTER_CHILDREN";
             data["מפחידים"] = "ROOM_FILTER_SCARY";
             data["מתאימים לנשים בהריון"] = "ROOM_FILTER_PREGNANT";
@@ -446,7 +448,7 @@ app.post('/webhook', function (req, res) {
                                 } else if (filter === "EXPERIENCED") {
                                     context.is_beginner = false;
                                 } else if (filter === "DOUBLE") {
-                                    context.is_double = false;
+                                    context.is_double = true;
                                 } else if (filter === "GROUP"){
                                    context.is_for_groups = true;
                                 }
