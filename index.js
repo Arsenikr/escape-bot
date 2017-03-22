@@ -74,14 +74,19 @@ function handleFBMessage(sessionId, context, entry) {
                                     enriched_context.room_list = reply;
                                     Bot.displayResponse(recipient, enriched_context);
                                 } else {
-                                    if (entry.message.text && entry.message.text.startsWith("חדר בריחה ")) {
-                                        let maybe_room_name = entry.message.text.substring("חדר בריחה ".length);
-                                        Bot.findRoomByName(maybe_room_name).then(function (reply) {
-                                            if (reply && reply.length > 0) {
-                                                FB.newStructuredMessage(recipient, reply)
+                                    if (entry.message.text){
+                                        Bot.extractRoomName(entry.message.text).then(maybe_room_name => {
+                                            if(typeof maybe_room_name !== 'undefined') {
+                                                Bot.findRoomByName(maybe_room_name).then(function (reply) {
+                                                    if (reply && reply.length > 0) {
+                                                        FB.newStructuredMessage(recipient, reply)
+                                                    } else {
+                                                        Bot.read(sessionId, enriched_context, recipient, enriched_context.message)
+                                                    }
+                                                });
                                             } else {
                                                 Bot.read(sessionId, enriched_context, recipient, enriched_context.message)
-                                           }
+                                            }
                                         });
                                     }
                                     else {
@@ -305,7 +310,7 @@ app.post('/webhook', function (req, res) {
 
                 let context = Bot.sessions[sessionId].context;
                 if (entry && entry.postback) {
-                    if (context.is_started === undefined && entry.postback.payload === Config.GET_STARTED_PAYLOAD) {
+                    if (typeof context.is_started === 'undefined' && entry.postback.payload === Config.GET_STARTED_PAYLOAD) {
 
                         FB.getUserProfile(recipient).then(profile => {
                             sendStartMessages(context, entry, profile);

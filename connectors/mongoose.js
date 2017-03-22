@@ -181,7 +181,7 @@ function generateQueryFromContext(context) {
     if(context.is_double) double_query = {'is_double': 1};
 
     let company_query = {};
-    if (context.company_name) company_query = {"company_name": {'$regex': context.company_name}};
+    if (context.company_name) company_query = {"company_name": {'$regex': context.company_name.toLowerCase()}};
 
     let pregnant_query = {};
     if (typeof context.is_for_pregnant !== 'undefined') pregnant_query = {"is_for_pregnant": Number(context.is_for_pregnant)};
@@ -288,7 +288,7 @@ function findRoomByName(room_name) {
 
             console.log("trying to find by name: " + room_name);
 
-            EscapeRoom.find({"room_name": {'$regex': room_name, '$options': 'i'}}, {
+            EscapeRoom.find({"room_name": {'$regex': room_name.toLowerCase(), '$options': 'i'}}, {
                 'room_id': true,
                 'room_name': true,
                 'company_name': true,
@@ -536,7 +536,7 @@ function findErrorMessage(message_type) {
 function location_cleanup(location) {
     return new Promise(
         function (resolve) {
-            if(location) {
+            if(location && location !== "קבוצות גדולות") {
                 if(location.startsWith("בקיבוץ ") || location.startsWith("קיבוץ  ") || location.startsWith("במושב ") || location.startsWith("מושב ") || location.startsWith("בעיר ")) {
                     location = location.replace("בקיבוץ ", "");
                     location = location.replace("קיבוץ ", "");
@@ -547,6 +547,8 @@ function location_cleanup(location) {
                     location = location.replace("איזור ", "");
                     location = location.replace("אזור ", "");
                     location = location.replace("באיזור ", "");
+                    location = location.replace(" הארץ", "");
+
                     return resolve(location)
                 } else if (location.charAt(0) === 'ב') {
                         return resolve(location.substr(1));

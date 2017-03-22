@@ -179,7 +179,14 @@ function enrichFlags(context,message) {
     return new Promise(
         function (resolve) {
 
-            if(message.includes("הריון")){
+            // cleanup
+            message = message.replace(".","");
+            message = message.replace("?","");
+            message = message.replace("!","");
+            message = message.replace(/\s+/g, ' ');
+
+
+            if(message.includes("הריון") || message.includes("היריון")){
                 console.log("הריון");
                 context.is_for_pregnant = true;
                 // message.replace("הריון","");
@@ -232,7 +239,7 @@ function enrichFlags(context,message) {
                 context.is_beginner = true;
                 // message.replace("מתחילים","");
             }
-            if(message.includes("מנוסים") || message.includes("מתקדמים")){
+            if(message.includes("מנוסים") || message.includes("מתקדמים") || message.includes("קשה") || message.includes("קשות")){
                 console.log("מנוסים");
                 context.is_beginner = false;
                 // message.replace("מנוסים","");
@@ -630,6 +637,7 @@ function extractResponseFromContext(context) {
         msg += " ל" + context.num_of_people + " אנשים"
     }
     msg = msg.replace(", ", " ");
+
     return msg;
 }
 
@@ -639,6 +647,7 @@ function displayResponse(recipient, context) {
 
             let msg = "הנה רשימה של חדרים";
             msg += extractResponseFromContext(context);
+            msg += "\n" + "לתוצאות נוספות אנא לחץ על ׳הצג עוד חדרים׳";
             FB.newSimpleMessage(recipient, msg).then(r => {
                     if(context.room_list && context.room_list.length == 1){
                         FB.newStructuredMessage(recipient, context.room_list).then(r => {
@@ -931,6 +940,30 @@ function handleMoreInfo2(context, recipient, room_id) {
 }
 
 
+function extractRoomName(message) {
+    return new Promise(
+        function (resolve) {
+            if (message.startsWith("חדר בריחה ")) {
+                resolve(message.substring("חדר בריחה ".length));
+            } else if (message.startsWith("איך החדר ")) {
+                resolve(message.substring("איך החדר ".length));
+
+            } else if (message.startsWith("איך ")) {
+                resolve(message.substring("איך ".length));
+
+            } else if (message.startsWith("מידע על חדר ")) {
+                resolve(message.substring("מידע על חדר ".length));
+
+            } else if (message.startsWith("מידע על החדר ")) {
+                resolve(message.substring("מידע על החדר ".length));
+            } else if (message.startsWith("מידע על ")) {
+                resolve(message.substring("מידע על ".length));
+            } else {
+                resolve(undefined);
+            }
+        });
+}
+
 function generateWazeLink(lat,lon) {
     return new Promise(
         function (resolve) {
@@ -972,6 +1005,7 @@ module.exports = {
     handleMoreInfo2: handleMoreInfo2,
     generateWazeLink: generateWazeLink,
     generateMoovitLink: generateMoovitLink,
-    displayErrorMessage: displayErrorMessage
+    displayErrorMessage: displayErrorMessage,
+    extractRoomName:extractRoomName
 };
 
