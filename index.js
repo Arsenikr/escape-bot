@@ -382,7 +382,14 @@ app.post('/webhook', function (req, res) {
                         }, 3000);
                     }
                     } else if (entry && entry.message && entry.message.quick_reply) {
-                    if (entry.message.quick_reply.payload.startsWith("LOCATION_QR")) {
+                    if (entry.message.quick_reply.payload.startsWith("NEW_SEARCH")) {
+                        setTimeout(function () {
+                            FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
+                                delete context.state;
+                                resetSession(context, recipient);
+                            })
+                        }, 3000);
+                    } else if (entry.message.quick_reply.payload.startsWith("LOCATION_QR")) {
                         console.log("adding location: " + entry.message.text);
                         context.location = entry.message.text;
                         delete context.lat;
