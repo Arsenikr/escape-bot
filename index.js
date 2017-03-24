@@ -129,6 +129,9 @@ function sendStartMessages(context, entry, profile) {
                         elements.push(videoItem);
 
                         FB.newStructuredMessage(recipient, elements).then(r => {
+                            let message = "ט.ל.ח - במידה ונפלה טעות במידע אנא עדכנו אותנו ונתקן" + "\n";
+                            message += "מייל לפניות: escapebotil@gmail.com";
+                            FB.newSimpleMessage(recipient, message).then(resp => {
 
                             FB.newSimpleMessage(recipient, "בואו נתחיל!").then(r => {
 
@@ -136,6 +139,7 @@ function sendStartMessages(context, entry, profile) {
                                     // Bot.sessions[sessionid].context.is_started = true;
                                 })
                             });
+                        });
                         });
                     }, 3000);
                 });

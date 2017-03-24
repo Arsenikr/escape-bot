@@ -144,9 +144,9 @@ function read(sessionId,context,sender, message) {
                         FB.newSenderAction(sender, Config.TYPING_OFF).then(_ => {
                             let new_context = sessions[sessionId].context;
                             displayErrorMessage(sender,new_context).then(ans => {
-                                createGeneralMenu(new_context).then(menu => {
-                                    FB.newStructuredMessage(sender, menu);
-                                })
+                                // createGeneralMenu(new_context).then(menu => {
+                                //     FB.newStructuredMessage(sender, menu);
+                                // })
                             })
                         }, 3000);
                     })
@@ -647,7 +647,7 @@ function displayResponse(recipient, context) {
 
             let msg = "הנה רשימה של חדרים";
             msg += extractResponseFromContext(context);
-            msg += "\n" + "לתוצאות נוספות אנא לחץ על ׳הצג עוד חדרים׳";
+            msg += "\n" + "לתוצאות נוספות אנא לחצו על ׳הצג עוד חדרים׳";
             FB.newSimpleMessage(recipient, msg).then(r => {
                     if(context.room_list && context.room_list.length == 1){
                         FB.newStructuredMessage(recipient, context.room_list).then(r => {
@@ -682,9 +682,10 @@ function displayErrorMessage(recipient, context) {
                     let msg = "לא הצלחתי למצוא חדרים" +
                         "";
                     msg += extractResponseFromContext(context);
-                    msg += " נסה שוב או התחל חיפוש חדש";
                     FB.newSimpleMessage(recipient, msg).then(r => {
-                        return resolve(context)
+                        showNewSearchQR(recipient).then(r => {
+                            return resolve(context)
+                        })
                     })
                 }, 5000)
             });
@@ -961,6 +962,21 @@ function extractRoomName(message) {
             } else {
                 resolve(undefined);
             }
+        });
+}
+
+function showNewSearchQR(recipient) {
+    return new Promise(
+        function (resolve) {
+
+            let data = {};
+            data["חיפוש חדש"] = "NEW_SEARCH";
+            createQuickReplies(data).then(qr => {
+                FB.newSimpleMessage(recipient, "נסה שוב, או התחל חיפוש חדש", qr).then(r => {
+                    resolve();
+                });
+
+            });
         });
 }
 
