@@ -6,8 +6,8 @@ if (!WIT_TOKEN) {
 }
 
 
-// let FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'EAAWWKHfJWxwBAIN85prH443HmoiysM4rDypOZBAi2RKqzcJuiyTuFUkKHedXq8ANzw96KhlBZCxAdX3wyZCAnLxMQ8MettYqeJKzhx61HpknEssdp9nIPncNVVlOceJ8CjoMdivzpVHFtsw1ZBytjTtQxyOKTgOAnYSiR7kQdwZDZD';
-let FB_PAGE_TOKEN = process.env.DEV_FB_PAGE_TOKEN || 'EAAXAgUvFkuIBAN9FVo8tYZBewf4UErvwEPmX57U98bTdAuFhi1UmQHmpr7jiWlSsVajNZBdsvUJQkZBSKZA6InqlLj5XrWaTTekSREtbq67LbZCFfPV1r9ExUvjAKQ8TZCrdNa9RZAFr9qeLgaE2NMqCWi3ZCoPcZAxyZBJeRA63mxsgZDZD';
+let FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'EAAWWKHfJWxwBAIN85prH443HmoiysM4rDypOZBAi2RKqzcJuiyTuFUkKHedXq8ANzw96KhlBZCxAdX3wyZCAnLxMQ8MettYqeJKzhx61HpknEssdp9nIPncNVVlOceJ8CjoMdivzpVHFtsw1ZBytjTtQxyOKTgOAnYSiR7kQdwZDZD';
+// let FB_PAGE_TOKEN = process.env.DEV_FB_PAGE_TOKEN || 'EAAXAgUvFkuIBAN9FVo8tYZBewf4UErvwEPmX57U98bTdAuFhi1UmQHmpr7jiWlSsVajNZBdsvUJQkZBSKZA6InqlLj5XrWaTTekSREtbq67LbZCFfPV1r9ExUvjAKQ8TZCrdNa9RZAFr9qeLgaE2NMqCWi3ZCoPcZAxyZBJeRA63mxsgZDZD';
 if (!FB_PAGE_TOKEN) {
 	throw new Error('Missing FB_PAGE_TOKEN. Go to https://developers.facebook.com/docs/pages/access-tokens to get one.')
 }
