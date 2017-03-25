@@ -959,6 +959,10 @@ function extractRoomName(message) {
                 resolve(message.substring("מידע על החדר ".length));
             } else if (message.startsWith("מידע על ")) {
                 resolve(message.substring("מידע על ".length));
+            } else if (message.startsWith("איפה נמצא ")) {
+                resolve(message.substring("איפה נמצא ".length));
+            } else if (message.startsWith("איפה נמצא החדר ")) {
+                resolve(message.substring("איפה נמצא החדר ".length));
             } else {
                 resolve(undefined);
             }
