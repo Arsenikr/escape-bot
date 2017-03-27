@@ -83,7 +83,7 @@ let actions = {
             let num_of_people = firstEntityValue(entities, 'math_expression');
             let local_search_query = firstEntityValue(entities, 'local_search_query');
 
-            if(local_search_query && location === null) location = local_search_query;
+            // if(local_search_query && location === null) location = local_search_query;
 
             console.log("wit received: " + location);
             console.log("wit received: " + num_of_people);
@@ -189,86 +189,101 @@ function enrichFlags(context,message) {
             if(message.includes("הריון") || message.includes("היריון")){
                 console.log("הריון");
                 context.is_for_pregnant = true;
-                // message.replace("הריון","");
+                message = message.replace("הריון","");
             }
+
             if(message.includes("נכים") || message.includes("מוגבלויות") || message.includes("נגיש")){
                 console.log("נכים");
                 context.is_for_disabled = true;
-                // message.replace("נכים","");
-                // message.replace("מוגבלויות","");
-                // message.replace("נגיש","");
+                message = message.replace("נכים","");
+                message = message.replace("מוגבלויות","");
+                message = message.replace("נגיש","");
             }
 
             if(message.includes("שמיעה") || message.includes("כבדי שמיעה")){
                 console.log("שמיעה");
                 context.is_for_hearing_impaired = true;
-                // message.replace("כבדי שמיעה","");
-                // message.replace("שמיעה","");
+                message = message.replace("כבדי שמיעה","");
+                message = message.replace("שמיעה","");
             }
 
             if(message.includes("ילדים") || message.includes("משפחה") || message.includes("משפחות")){
                 console.log("ילדים");
                 context.is_for_children = true;
-                // message.replace("ילדים","");
+                message = message.replace("ילדים","");
+                message = message.replace("משפחה","");
+                message = message.replace("משפחות","");
             }
 
             if(message.includes("מבוגרים")){
                 console.log("מבוגרים");
                 context.is_for_children = false;
-                // message.replace("מבוגרים","");
+                message = message.replace("מבוגרים","");
             }
 
             if(message.includes("אשראי")){
                 console.log("אשראי");
                 context.is_credit_card_accepted = true;
-                // message.replace("אשראי","");
+                message = message.replace("אשראי","");
             }
 
             if(message.includes("לא מפחיד")){
                 console.log("לא מפחיד");
                 context.is_scary = false;
-                // message.replace("לא מפחיד","");
+                message = message.replace("לא מפחיד","");
             } else if(message.includes("מפחיד") || message.includes("אימה") || message.includes("קריפי")){
                 console.log("מפחיד");
                 context.is_scary = true;
-                // message.replace("מפחיד","");
+                message = message.replace("מפחיד","");
+                message = message.replace("אימה","");
+                message = message.replace("קריפי","");
             }
 
             if(message.includes("מתחילים")){
                 console.log("מתחילים");
                 context.is_beginner = true;
-                // message.replace("מתחילים","");
+                message = message.replace("מתחילים","");
             }
             if(message.includes("מנוסים") || message.includes("מתקדמים") || message.includes("קשה") || message.includes("קשות")){
                 console.log("מנוסים");
                 context.is_beginner = false;
-                // message.replace("מנוסים","");
+                message = message.replace("מנוסים","");
+                message = message.replace("מתקדמים","");
+                message = message.replace("קשה","");
+                message = message.replace("קשות","");
             }
 
             if(message.includes("ליניארי") || message.includes("לינארי") ){
                 console.log("ליניארי");
                 context.is_linear = true;
-                // message.replace("ליניארי","");
-                // message.replace("לינארי","");
+                message = message.replace("ליניארי","");
+                message = message.replace("לינארי","");
             }
 
             if(message.includes("מקבילי")){
                 console.log("מקבילי");
                 context.is_parallel = false;
-                // message.replace("מקבילי","");
+                message = message.replace("מקבילי","");
             }
 
             if(message.includes("קבוצות גדולות") || message.includes("קבוצה גדולה")){
                 console.log("קבוצות גדולות");
                 context.is_for_groups = true;
-                // message.replace("מקבילי","");
+                message = message.replace("קבוצות גדולות","");
+                message = message.replace("קבוצה גדולה","");
             }
 
             if( message.includes("כפול")){
                 console.log("כפול");
                 context.is_double = true;
-                // message.replace("מקבילי","");
+                message = message.replace("כפול","");
             }
+
+            // if( message.includes("עם שחקן")){
+            //     console.log("שחקן");
+            //     context.is_actor = true;
+            //     message = message.replace("עם שחקן","");
+            // }
 
             context.message = message;
             resolve(context)
