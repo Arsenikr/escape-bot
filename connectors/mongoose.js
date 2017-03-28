@@ -288,7 +288,7 @@ function findRoomByName(room_name) {
 
             console.log("trying to find by name: " + room_name);
 
-            EscapeRoom.find({"room_name": {'$regex': room_name.toLowerCase(), '$options': 'i'}}, {
+            EscapeRoom.find({"room_name": {'$regex': room_name.toLowerCase()}}, {
                 'room_id': true,
                 'room_name': true,
                 'company_name': true,
