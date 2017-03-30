@@ -54,6 +54,7 @@ const EscapeRoomsSchema = new Schema({
     is_gift_card: Number,
     escape_card: Number,
     birthday_discount: Number,
+    is_actor: Number,
     is_linear: Number,
     is_parallel: Number,
     is_beginner: Number,
@@ -207,10 +208,13 @@ function generateQueryFromContext(context) {
     let linear_query = {};
     if (typeof context.is_linear !== 'undefined') linear_query = {"is_linear": Number(context.is_linear)};
 
+    let actor_query = {};
+    if (typeof context.is_actor !== 'undefined') actor_query = {"is_actor": Number(context.is_actor)};
+
     let parallel_query = {};
     if (typeof context.is_parallel !== 'undefined') parallel_query = {"is_parallel": Number(context.is_parallel)};
 
-    let query = {'$and': [loc_query, nop_query, company_query, pregnant_query, double_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query, linear_query, parallel_query]};
+    let query = {'$and': [loc_query, nop_query, company_query, pregnant_query, double_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query,actor_query, linear_query, parallel_query]};
     return query;
 }
 
@@ -251,6 +255,7 @@ function findRoomInDb(context) {
                         'is_scary': true,
                         'is_beginner': true,
                         'is_for_hearing_impaired': true,
+                        'is_actor': true,
                         'is_linear': true,
                         'is_parallel': true
                     }).then(function (docs) {
@@ -288,7 +293,7 @@ function findRoomByName(room_name) {
 
             console.log("trying to find by name: " + room_name);
 
-            EscapeRoom.find({"room_name": {'$regex': room_name.toLowerCase()}}, {
+            EscapeRoom.find({"room_name": room_name.toLowerCase()}, {
                 'room_id': true,
                 'room_name': true,
                 'company_name': true,
@@ -309,6 +314,7 @@ function findRoomByName(room_name) {
                 'is_scary': true,
                 'is_beginner': true,
                 'is_for_hearing_impaired': true,
+                'is_actor': true,
                 'is_linear': true,
                 'is_parallel': true
             }).then(function (docs) {
@@ -381,6 +387,7 @@ function findRoomsByCompany(context,company_name) {
                 'is_scary': true,
                 'is_beginner': true,
                 'is_for_hearing_impaired': true,
+                'is_actor': true,
                 'is_linear': true,
                 'is_parallel': true
             }).then(function (docs) {

@@ -279,11 +279,12 @@ function enrichFlags(context,message) {
                 message = message.replace("כפול","");
             }
 
-            // if( message.includes("עם שחקן")){
-            //     console.log("שחקן");
-            //     context.is_actor = true;
-            //     message = message.replace("עם שחקן","");
-            // }
+            if( message.includes("עם שחקן") || message.includes("בהשתתפות שחקן")){
+                console.log("שחקן");
+                context.is_actor = true;
+                message = message.replace("עם שחקן","");
+                message = message.replace("בהשתתפות שחקן","");
+            }
 
             context.message = message;
             resolve(context)
@@ -632,6 +633,13 @@ function extractResponseFromContext(context) {
         msg += "ליניאריים";
     }
 
+    if (typeof context.is_actor !== 'undefined') {
+        let bool = Boolean(context.is_actor);
+        msg += ", ";
+        if (!bool) msg += " לא ";
+        msg += "עם שחקן";
+    }
+
 
     if (typeof context.is_parallel !== 'undefined') {
         let bool = Boolean(context.is_parallel);
@@ -662,6 +670,7 @@ function displayResponse(recipient, context) {
 
             let msg = "הנה רשימה של חדרים";
             msg += extractResponseFromContext(context);
+            msg += "\n" + "סה״כ " + context.room_list.length + " חדרים";
             msg += "\n" + "לתוצאות נוספות אנא לחצו על ׳הצג עוד חדרים׳";
             FB.newSimpleMessage(recipient, msg).then(r => {
                     if(context.room_list && context.room_list.length == 1){
@@ -908,6 +917,14 @@ function handleMoreInfo2(context, recipient, room_id) {
                                     msg_list.push(msg);
                                 }
 
+                                if (room.is_actor) {
+                                    let bool = Boolean(room.is_actor);
+                                    let msg = "";
+                                    if (!bool) msg += " לא ";
+                                    msg += "עם שחקן";
+                                    msg_list.push(msg);
+                                }
+
                                 if (room.is_for_pregnant) {
                                     let bool = Boolean(room.is_for_pregnant);
                                     let msg = "";
@@ -963,6 +980,9 @@ function extractRoomName(message) {
                 resolve(message.substring("חדר בריחה ".length));
             } else if (message.startsWith("איך החדר ")) {
                 resolve(message.substring("איך החדר ".length));
+
+            } else if (message.startsWith("איך חדר הבריחה ")) {
+                resolve(message.substring("איך חדר הבריחה ".length));
 
             } else if (message.startsWith("איך ")) {
                 resolve(message.substring("איך ".length));

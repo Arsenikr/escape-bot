@@ -195,7 +195,7 @@ function createFiltersQR() {
             data["מתאימים למתחילים"] = "ROOM_FILTER_BEGINNER";
             data["מתאימים למנוסים"] = "ROOM_FILTER_EXPERIENCED";
             data["לקבוצות גדולות"] = "ROOM_FILTER_GROUP";
-            data["לקבוצות גדולות"] = "ROOM_FILTER_GROUP";
+            data["עם שחקן"] = "ROOM_FILTER_ACTOR";
             data["כפולים"] = "ROOM_FILTER_DOUBLE";
             data["מתאימים לילדים"] = "ROOM_FILTER_CHILDREN";
             data["מפחידים"] = "ROOM_FILTER_SCARY";
@@ -449,6 +449,8 @@ app.post('/webhook', function (req, res) {
                                     context.is_parallel = true;
                                 } else if (filter === "LINEAR") {
                                     context.is_linear = true;
+                                } else if (filter === "ACTOR") {
+                                    context.is_actor = true;
                                 } else if (filter === "HEARING") {
                                     context.is_for_hearing_impaired = true;
                                 } else if (filter === "DISABLED") {
