@@ -83,7 +83,7 @@ let actions = {
             let num_of_people = firstEntityValue(entities, 'math_expression');
             let local_search_query = firstEntityValue(entities, 'local_search_query');
 
-            // if(local_search_query && location === null) location = local_search_query;
+            if(local_search_query && location === null) location = local_search_query;
 
             console.log("wit received: " + location);
             console.log("wit received: " + num_of_people);
