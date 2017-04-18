@@ -34,7 +34,7 @@ app.get('/webhook/', function (req, res) {
 // Spin up the server
 
 // Initialize the app.
-const server = app.listen(process.env.PORT || 8080, function () {
+const server = app.listen(process.env.PORT || 8081, function () {
     let port = server.address().port;
     console.log("App now running on port", port);
 });
@@ -153,7 +153,7 @@ function createLocationQR() {
         function (resolve) {
 
             let data = {};
-            data["ב״שׁ"] = "LOCATION_QR1";
+            data["ב״ש"] = "LOCATION_QR1";
             data["דרום"] = "LOCATION_QR2";
             data["ראשון לציון"] = "LOCATION_QR3";
             data["ת״א"] = "LOCATION_QR4";
@@ -202,8 +202,7 @@ function createFiltersQR() {
             data["מתאימים לנשים בהריון"] = "ROOM_FILTER_PREGNANT";
             data["מונגשים לנכים"] = "ROOM_FILTER_DISABLED";
             data["מותאמים לכבדי שמיעה"] = "ROOM_FILTER_HEARING";
-            data["ליניאריים"] = "ROOM_FILTER_LINEAR";
-            data["מקביליים"] = "ROOM_FILTER_PARALLEL";
+            data["פנויים היום"] = "ROOM_FILTER_AVAILABLE_TODAY";
 
             Bot.createQuickReplies(data).then(replies => {
                 resolve(replies)
@@ -469,6 +468,8 @@ app.post('/webhook', function (req, res) {
                                     context.is_double = true;
                                 } else if (filter === "GROUP"){
                                    context.is_for_groups = true;
+                                } else if (filter === "AVAILABLE_TODAY"){
+                                   context.availability = "פנוי היום";
                                 }
 
                                 Bot.findEscapeRoomByContext(context).then(context => {

@@ -7,7 +7,8 @@ const DB = require('./connectors/mongoose');
 const FB = require('./connectors/facebook');
 const TinyURL = require('tinyurl');
 const GeoPoint = require('geopoint');
-
+const Escaper = require('./escaper');
+const moment = require('moment');
 
 
 // LETS SAVE USER SESSIONS
@@ -82,7 +83,7 @@ let actions = {
             let location = firstEntityValue(entities, 'location');
             let num_of_people = firstEntityValue(entities, 'math_expression');
             let local_search_query = firstEntityValue(entities, 'local_search_query');
-
+            let availability =  firstEntityValue(entities, 'availability');
             if(local_search_query && location === null) location = local_search_query;
 
             console.log("wit received: " + location);
@@ -96,6 +97,9 @@ let actions = {
             }
             if (num_of_people) {
                 context.num_of_people = num_of_people;
+            }
+            if(availability) {
+                context.availability = availability
             }
 
             sessions[sessionId].context = context;
@@ -329,17 +333,44 @@ function findEscapeRoomByContext(context) {
     return new Promise(
         function (resolve, reject) {
             DB.findRoomInDb(context).then(response => {
-                if(response){
-                    context.room_list = createRoomsList(context,response,true);
+                if (response) {
+                    if (context.availability) {
+                        Escaper.getAvailableSlots(response,context.availability).then(filtered_response => {
+                            let sorted_rooms = filtered_response.sort( function (a,b) {
+                                let aa = moment(a.first_slot,"HH:mm");
+                                if(a.first_slot <= "06:00") {
+                                    aa.add(1,'days');
+                                }
+                                let bb = moment(b.first_slot,"HH:mm");
+                                if(b.first_slot <= "06:00") {
+                                    bb.add(1,'days');
+                                }
+
+
+                                if(aa <= bb){
+                                   return -1;
+                               } else if (aa > bb){
+                                   return 1;
+                               }
+                            });
+                            context.room_list = createRoomsList(context, sorted_rooms, true);
+                            return resolve(context);
+                        })
+                    } else {
+                        context.room_list = createRoomsList(context, response, true);
+                        return resolve(context);
+                    }
+
                 } else {
                     context.room_list = undefined;
+                    return resolve(context);
                 }
-                return resolve(context)
             }).catch(function (err) {
                 return reject(err);
             });
         })
 }
+
 
 function createRoomsList(context,response) {
     let list = [];
@@ -355,10 +386,15 @@ function createRoomsList(context,response) {
             }
 
             let subtitle = "";
+            if(typeof response[i].slots !== 'undefined' ){
+                subtitle += "\n" + "שעות פנויות: " +  response[i].slots.slice(0,3) + "\n"
+            }
+
             if(geo_distance){
                 subtitle += geo_distance + " ק״מ" + "\n"
             }
             subtitle += response[i].address + "\n" + " טל׳: " + response[i].phone;
+
 
             let url_button = {
                     title: 'הזמנ/י',
@@ -368,7 +404,7 @@ function createRoomsList(context,response) {
                     webview_height_ratio: 'tall'
                 },
                 info_button = {
-                    title: 'עוד מידע',
+                    title: 'למידע נוסף',
                     type: 'postback',
                     payload: "MORE_INFO_" + response[i].room_id
                 },
@@ -460,8 +496,6 @@ function createMoovitItem(url) {
     }
 }
 
-
-
 function createMenu(data, images) {
     let list = [];
     if (data) {
@@ -530,7 +564,7 @@ function createGeneralMenu(context) {
                     images["חיפוש לפי חברה"] = "https://s12.postimg.org/caf2xxbtp/lock_1673604_640.jpg"
                 }
 
-                data["סינונים נוספים"] = "MORE_FILTERS";
+                data["סינונים נוספים"] = "";
                 images["סינונים נוספים"] = "https://s22.postimg.org/3nxe2ovq9/labyrinth_2037903_640.jpg";
 
 
@@ -561,7 +595,19 @@ function drawMenu(recipient) {
 
 function extractResponseFromContext(context) {
     let msg = "";
-    if ( typeof context.is_beginner !== 'undefined' ) {
+    if ( typeof context.availability !== 'undefined' ) {
+        msg += ", ";
+        msg += "פנויים";
+
+        if(context.availability === "פנוי היום" || context.availability === "פנוי" || context.availability === "פנוי הערב" || context.availability.includes("היום") || context.availability.includes("הערב")){
+            msg += " להיום";
+
+        } else if(context.availability === "פנוי מחר" || context.availability.includes("מחר")){
+            msg += " למחר";
+        }
+    }
+
+        if ( typeof context.is_beginner !== 'undefined' ) {
         let bool = Boolean(context.is_beginner);
         msg += ", ";
         if (!bool) {
@@ -659,7 +705,12 @@ function extractResponseFromContext(context) {
     if (!context.is_for_groups && context.num_of_people && !(context.num_of_people === 1)) {
         msg += " ל" + context.num_of_people + " אנשים"
     }
-    msg = msg.replace(", ", " ");
+
+    if ( typeof context.availability !== 'undefined' ) {
+        msg += "\n" + "המידע על החדרים הפנויים באדיבות www.escaper.co.il"
+    }
+
+        msg = msg.replace(", ", " ");
 
     return msg;
 }
@@ -671,6 +722,7 @@ function displayResponse(recipient, context) {
             let msg = "הנה רשימה של חדרים";
             msg += extractResponseFromContext(context);
             msg += "\n" + "סה״כ " + context.room_list.length + " חדרים";
+            msg += "\n" + "למידע על החדר לחצו ׳למידע נוסף׳";
             msg += "\n" + "לתוצאות נוספות אנא לחצו על ׳הצג עוד חדרים׳";
             FB.newSimpleMessage(recipient, msg).then(r => {
                     if(context.room_list && context.room_list.length == 1){
@@ -767,7 +819,6 @@ function handleMoreInfo(context, recipient, room_id) {
                         //
                         // FB.newStructuredMessage(recipient, elements).then(r => {
                         let elements = [];
-
                         let hashtagItem = createHashtagItem(room.hashtag);
                         elements.push(hashtagItem);
 
@@ -783,25 +834,25 @@ function handleMoreInfo(context, recipient, room_id) {
                                 msg += "שיכול להכיל עד ";
 
                                 if (room.is_double === 1) {
-                                    msg += room.max_players*2 + " איש."
+                                    msg += room.max_players * 2 + " איש."
                                 } else {
                                     msg += room.max_players + " איש."
                                 }
 
                                 msg_list.push(msg);
 
-                                if (typeof context.is_for_groups === 'undefined'  && context.num_of_people > 1 && context.num_of_people < 10 && room['price_' + context.num_of_people] && room['weekend_price_' + context.num_of_people]) {
+                                if (typeof context.is_for_groups === 'undefined' && context.num_of_people > 1 && context.num_of_people < 10 && room['price_' + context.num_of_people] && room['weekend_price_' + context.num_of_people]) {
                                     msg_list.push("לקבוצה של " + context.num_of_people + ": ");
                                     msg_list.push("מחיר לשחקן באמצע שבוע: " + room['price_' + context.num_of_people] + " שקלים");
                                     msg_list.push("מחיר לשחקן בסוף שבוע: " + room['weekend_price_' + context.num_of_people] + " שקלים")
                                 } else {
                                     let weekday_avg = calculateAveragePrice(room, false);
                                     let weekend_avg = calculateAveragePrice(room, true);
-                                    if(!isNaN(weekday_avg)){
+                                    if (!isNaN(weekday_avg)) {
                                         msg_list.push("מחיר ממוצע לשחקן באמצע שבוע: " + calculateAveragePrice(room, false) + " שקלים");
                                     }
 
-                                    if(!isNaN(weekend_avg)){
+                                    if (!isNaN(weekend_avg)) {
                                         msg_list.push("מחיר ממוצע לשחקן בסוף שבוע: " + calculateAveragePrice(room, true) + " שקלים")
                                     }
                                 }
@@ -812,21 +863,59 @@ function handleMoreInfo(context, recipient, room_id) {
                                 }
 
 
-                                FB.newSimpleMessage(recipient, merged_msg).then(r =>{
-                                    let data = {};
-                                    data["אני רוצה לדעת עוד..."] = "MORE_INFO2_" + room_id;
-                                    createQuickReplies(data).then(qr => {
-                                        FB.newSimpleMessage(recipient, "רוצה לדעת עוד?", qr).then(r => {
-                                            resolve(context);
+                                FB.newSimpleMessage(recipient, merged_msg).then(r => {
+                                    let msg_list = [];
+                                    if(typeof room.escaper_id !== 'undefined'){
+                                        Escaper.getAvailableSlotsForToday(room.escaper_id).then(slots => {
+                                            if(slots.length > 0) {
+                                                msg_list.push("שעות פנויות להיום: ");
+                                                msg_list.push("");
+                                                for (let i in slots) {
+                                                    msg_list.push("" + slots[i])
+                                                }
+                                                msg_list.push("");
+                                                msg_list.push("להזמנות: " + room.website)
+                                            } else{
+                                                msg_list.push("אין שעות פנויות להיום!");
+                                            }
+                                            msg_list.push("");
+                                            msg_list.push("המידע באדיבות www.escaper.co.il");
+                                            let merged_msg = "";
+                                            for (let key in msg_list) {
+                                                merged_msg += msg_list[key] + "\n";
+                                            }
+
+
+                                            FB.newSimpleMessage(recipient, merged_msg).then(r => {
+                                                let data = {};
+                                                data["אני רוצה לדעת עוד..."] = "MORE_INFO2_" + room_id;
+                                                createQuickReplies(data).then(qr => {
+                                                    FB.newSimpleMessage(recipient, "רוצה לדעת עוד?", qr).then(r => {
+                                                        resolve(context);
+                                                    });
+
+                                                })
+                                            })
+
                                         });
+                                    } else {
+                                        let data = {};
+                                        data["אני רוצה לדעת עוד..."] = "MORE_INFO2_" + room_id;
+                                        createQuickReplies(data).then(qr => {
+                                            FB.newSimpleMessage(recipient, "רוצה לדעת עוד?", qr).then(r => {
+                                                resolve(context);
+                                            });
 
-                                    })
-                                });
-                            }, 3000)
+                                        });
+                                    }
+
+
+                                }, 3000)
+                            });
+
                         });
-
-                    });
-                }, 3000)
+                    }, 3000)
+                });
             });
         });
 }
