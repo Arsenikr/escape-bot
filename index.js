@@ -202,8 +202,8 @@ function createFiltersQR() {
             data["מתאימים לנשים בהריון"] = "ROOM_FILTER_PREGNANT";
             data["מונגשים לנכים"] = "ROOM_FILTER_DISABLED";
             data["מותאמים לכבדי שמיעה"] = "ROOM_FILTER_HEARING";
-            data["ליניאריים"] = "ROOM_FILTER_LINEAR";
-            data["מקביליים"] = "ROOM_FILTER_PARALLEL";
+            // data["ליניאריים"] = "ROOM_FILTER_LINEAR";
+            // data["מקביליים"] = "ROOM_FILTER_PARALLEL";
 
             Bot.createQuickReplies(data).then(replies => {
                 resolve(replies)
@@ -337,6 +337,7 @@ app.post('/webhook', function (req, res) {
                             FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
 
                                 let room_name = entry.postback.payload.substring('MORE_INFO_'.length);
+                                context.room_name = room_name;
                                 Bot.handleMoreInfo(context, recipient, room_name)
                             });
                         });
