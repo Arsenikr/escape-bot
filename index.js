@@ -336,6 +336,7 @@ app.post('/webhook', function (req, res) {
                             FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
 
                                 let room_name = entry.postback.payload.substring('MORE_INFO_'.length);
+                                context.room_name = room_name;
                                 Bot.handleMoreInfo(context, recipient, room_name)
                             });
                         });
