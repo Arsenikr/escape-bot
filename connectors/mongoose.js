@@ -16,6 +16,7 @@ mongoose.connect(Config.MONGODB_URL, function (error) {
 const Schema = mongoose.Schema;
 const EscapeRoomsSchema = new Schema({
     room_id: Number,
+    escaper_id: Number,
     room_name_splitted: String,
     room_name: Array,
     company_name_splitted: String,
@@ -236,6 +237,7 @@ function findRoomInDb(context) {
                 EscapeRoom.find(query
                     , {
                         'room_id': true,
+                        'escaper_id': true,
                         'room_name': true,
                         'company_name': true,
                         'website': true,
@@ -295,6 +297,7 @@ function findRoomByName(room_name) {
 
             EscapeRoom.find({"room_name": room_name.toLowerCase()}, {
                 'room_id': true,
+                'escaper_id': true,
                 'room_name': true,
                 'company_name': true,
                 'website': true,
@@ -341,6 +344,7 @@ function findAllRooms() {
 
             EscapeRoom.find({}, {
                 'room_id': true,
+                'escaper_id': true,
                 'latitude': true,
                 'longitude': true
             }).then(function (docs) {
@@ -368,6 +372,7 @@ function findRoomsByCompany(context,company_name) {
             let query = generateQueryFromContext(context);
             EscapeRoom.find(query, {
                 'room_id': true,
+                'escaper_id': true,
                 'room_name': true,
                 'company_name': true,
                 'website': true,
