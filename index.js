@@ -34,7 +34,7 @@ app.get('/webhook/', function (req, res) {
 // Spin up the server
 
 // Initialize the app.
-const server = app.listen(process.env.PORT || 8081, function () {
+const server = app.listen(process.env.PORT || 8080, function () {
     let port = server.address().port;
     console.log("App now running on port", port);
 });
