@@ -192,6 +192,7 @@ function createFiltersQR() {
         function (resolve) {
 
             let data = {};
+            data["פנויים היום"] = "ROOM_FILTER_AVAILABLE_TODAY";
             data["מתאימים למתחילים"] = "ROOM_FILTER_BEGINNER";
             data["מתאימים למנוסים"] = "ROOM_FILTER_EXPERIENCED";
             data["לקבוצות גדולות"] = "ROOM_FILTER_GROUP";
@@ -202,7 +203,6 @@ function createFiltersQR() {
             data["מתאימים לנשים בהריון"] = "ROOM_FILTER_PREGNANT";
             data["מונגשים לנכים"] = "ROOM_FILTER_DISABLED";
             data["מותאמים לכבדי שמיעה"] = "ROOM_FILTER_HEARING";
-            data["פנויים היום"] = "ROOM_FILTER_AVAILABLE_TODAY";
 
             Bot.createQuickReplies(data).then(replies => {
                 resolve(replies)
@@ -295,6 +295,7 @@ function resetSession(context, recipient) {
     delete context.is_parallel;
     delete context.is_double;
     delete context.is_for_groups;
+    delete context.availability;
 
 
     Bot.createGeneralMenu(context).then(menu => {

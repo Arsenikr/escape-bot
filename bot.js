@@ -387,13 +387,13 @@ function createRoomsList(context,response) {
 
             let subtitle = "";
             if(typeof response[i].slots !== 'undefined' ){
-                subtitle += "\n" + "שעות פנויות: " +  response[i].slots.slice(0,3) + "\n"
+                subtitle += "\n" + response[i].slots.slice(0,3) + "\n"
             }
 
             if(geo_distance){
                 subtitle += geo_distance + " ק״מ" + "\n"
             }
-            subtitle += response[i].address + "\n" + " טל׳: " + response[i].phone;
+            subtitle += response[i].address; //+ "\n" + " טל׳: " + response[i].phone;
 
 
             let url_button = {
@@ -564,7 +564,7 @@ function createGeneralMenu(context) {
                     images["חיפוש לפי חברה"] = "https://s12.postimg.org/caf2xxbtp/lock_1673604_640.jpg"
                 }
 
-                data["סינונים נוספים"] = "";
+                data["סינונים נוספים"] = "MORE_FILTERS";
                 images["סינונים נוספים"] = "https://s22.postimg.org/3nxe2ovq9/labyrinth_2037903_640.jpg";
 
 
@@ -942,6 +942,7 @@ function handleMoreInfo2(context, recipient, room_id) {
 
 
                                 let msg_list = [];
+                                msg_list.push("טלפון: " + room.phone);
                                 if (room.soldier_discount || room.soldier_discount_weekend || room.student_discount || room.student_discount_weekend || room.children_discount || room.children_discount_weekend) {
                                     msg_list.push("הנחות:");
 

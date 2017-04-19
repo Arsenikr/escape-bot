@@ -140,7 +140,7 @@ function newStructuredMessage(recipientId, elements) {
                 opts.form.message = message;
 
                 newRequest(opts, function (err, resp, data) {
-                    if (err) {
+                    if (err || data.error) {
                         reject(err || data.error && data.error.message)
                     } else {
                         resolve(data)
