@@ -275,6 +275,11 @@ function askForMoreFilters(recipient, context) {
     })
 }
 
+function askForDuda(recipient) {
+    Bot.createQuickReplies({},true).then(quick_answers => {
+        FB.newSimpleMessage(recipient, "מה המיקום שלך?", quick_answers)
+    })
+}
 
 function resetSession(context, recipient) {
     delete context.location;
@@ -381,7 +386,13 @@ app.post('/webhook', function (req, res) {
 
                             });
                         }, 3000);
+                    } else if (entry.postback.payload === 'DUDA_FOR_ROOM') {
+                        setTimeout(function () {
+                            context.availability = "פנוי היום";
+                            askForDuda(recipient,context)
+                        }, 3000);
                     }
+
                     } else if (entry && entry.message && entry.message.quick_reply) {
                     if (entry.message.quick_reply.payload.startsWith("NEW_SEARCH")) {
                         setTimeout(function () {
@@ -403,6 +414,7 @@ app.post('/webhook', function (req, res) {
                             }
 
                         }).catch(err => {
+                            console.log((err));
                             Bot.displayErrorMessage(recipient, context).then(r => {
                                 askForLocation(recipient);
                             });
@@ -519,6 +531,7 @@ app.post('/webhook', function (req, res) {
                                     });
                                 }
                             }).catch(err => {
+                                console.log(error);
                                 Bot.displayErrorMessage(recipient, context).then(r => {
                                     askForLocation(recipient);
                                 });
