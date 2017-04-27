@@ -389,11 +389,12 @@ function createRoomsList(context,response) {
             if(typeof response[i].slots !== 'undefined' ){
                 subtitle += "\n" + response[i].slots.slice(0,3) + "\n"
             }
-            //
-            // if(geo_distance){
-            //     subtitle += geo_distance + " ק״מ " + " - "
-            // }
-            subtitle += response[i].address; //+ "\n" + " טל׳: " + response[i].phone;
+
+            if(geo_distance){
+                subtitle += geo_distance + " ק״מ" + "\n"
+            } else {
+                subtitle += response[i].address; //+ "\n" + " טל׳: " + response[i].phone;
+            }
 
 
             let url_button = {
