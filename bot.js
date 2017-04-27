@@ -391,7 +391,7 @@ function createRoomsList(context,response) {
             }
 
             if(geo_distance){
-                subtitle += geo_distance + " ק״מ" + "\n"
+                subtitle += geo_distance + " ק״מ " + " - "
             }
             subtitle += response[i].address; //+ "\n" + " טל׳: " + response[i].phone;
 
