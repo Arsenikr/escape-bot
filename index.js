@@ -515,8 +515,7 @@ app.post('/webhook', function (req, res) {
 
                     } else if(entry.message.text && entry.message.text.includes("דודא")) {
                         context.availability = "פנוי היום";
-                        Bot.showDudaMessage(context);
-
+                        askForDuda(recipient,context)
                     } else if (entry.message.attachments) {
                         if (entry.message.attachments[0] && entry.message.attachments[0].payload && entry.message.attachments[0].payload.coordinates) {
                             let lat = entry.message.attachments[0].payload.coordinates.lat;
