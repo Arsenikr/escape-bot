@@ -387,7 +387,7 @@ function createRoomsList(context,response) {
 
             let subtitle = "";
             if(typeof response[i].slots !== 'undefined' ){
-                subtitle += "\n" + response[i].slots.slice(0,2) + "\n"
+                subtitle += "\n" + response[i].slots.slice(0,1) + "\n"
             }
 
             if(geo_distance){
