@@ -59,7 +59,7 @@ function getTodayDate() {
 }
 
 function formatDate(date) {
-    return date.format('YYYY-MM-D');
+    return date.format('YYYY-MM-DD');
 }
 
 
