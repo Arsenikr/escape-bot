@@ -1,7 +1,7 @@
 'use strict';
 
 const request = require('request');
-const Config = require('../config');
+const Config = require('../../config');
 
 // SETUP A REQUEST TO FACEBOOK SERVER
 const newRequest = request.defaults({

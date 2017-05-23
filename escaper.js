@@ -2,8 +2,6 @@
  * http://usejsdoc.org/
  */
 const Config = require('./config');
-const DB = require('./connectors/mongoose');
-const FB = require('./connectors/facebook');
 const moment = require('moment');
 const fetch = require('node-fetch');
 
@@ -59,7 +57,7 @@ function getTodayDate() {
 }
 
 function formatDate(date) {
-    return date.format('YYYY-MM-D');
+    return date.format('YYYY-MM-DD');
 }
 
 

@@ -1,2 +1,2 @@
-const DB = require('../connectors/mongoose');
+const DB = require('../model/mongoose');
 DB.postProcess();

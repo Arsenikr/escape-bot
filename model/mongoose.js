@@ -223,16 +223,9 @@ function findRoomInDb(context) {
     return new Promise(
         function (resolve, reject) {
             if(context.location && context.location.startsWith("\"")) context.location = context.location.replace("\"","");
-            let cloc_promise = location_cleanup(context.location);
-            let cnop_promise = nop_cleanup(context.num_of_people);
 
-            Promise.all([cloc_promise, cnop_promise]).then(values => {
-                let cleaned_location = values[0];
-                let cleaned_nop = values[1];
-                if(context.is_for_groups) cleaned_nop = 8;
-                context.location = cleaned_location;
-                context.num_of_people = cleaned_nop;
-                console.log(cleaned_nop);
+                if(context.is_for_groups) context.num_of_people = 8;
+                console.log(context.num_of_people);
                 let query = generateQueryFromContext(context);
                 EscapeRoom.find(query
                     , {
@@ -284,7 +277,6 @@ function findRoomInDb(context) {
                         reject(err);
                     }
                 });
-            });
         });
 }
 
@@ -342,12 +334,7 @@ function findAllRooms() {
         function (resolve, reject) {
 
 
-            EscapeRoom.find({}, {
-                'room_id': true,
-                'escaper_id': true,
-                'latitude': true,
-                'longitude': true
-            }).then(function (docs) {
+            EscapeRoom.find({}).then(function (docs) {
                 if (docs && docs.length > 0) {
                         resolve(docs)
                 } else resolve(undefined)
@@ -433,6 +420,26 @@ function findRoomsByCompany(context,company_name) {
             });
 
     }
+
+function findRoomByRoomRunId(roomrun_id) {
+    return new Promise(
+        function (resolve, reject) {
+
+            console.log("trying to find by roomrun id: " + roomrun_id);
+            EscapeRoom.find({"roomrun_id": parseInt(roomrun_id)}).then(function (docs) {
+                if (docs && docs[0]) {
+                    resolve(docs[0])
+                } else {
+                    let msg = 'could not find a room with roomrun id: ' + roomrun_id;
+                    console.log(msg);
+                    return resolve(undefined)
+                }
+            }).catch(function (err) {
+                return reject(err);
+            });
+        });
+
+}
 
 function findCompaniesByContext(context) {
     return new Promise(
@@ -545,113 +552,34 @@ function findErrorMessage(message_type) {
         });
 }
 
-function location_cleanup(location) {
-    return new Promise(
-        function (resolve) {
-            if(location && location !== "קבוצות גדולות") {
-                if(location.startsWith("בקיבוץ ") || location.startsWith("קיבוץ  ") || location.startsWith("במושב ") || location.startsWith("מושב ") || location.startsWith("בעיר ")) {
-                    location = location.replace("בקיבוץ ", "");
-                    location = location.replace("קיבוץ ", "");
-                    location = location.replace("במושב ", "");
-                    location = location.replace("מושב ", "");
-                    location = location.replace("בעיר ", "");
-                    location = location.replace("באיזור ", "");
-                    location = location.replace("איזור ", "");
-                    location = location.replace("אזור ", "");
-                    location = location.replace("באיזור ", "");
-                    location = location.replace(" הארץ", "");
+// function location_cleanup(location) {
+//     return new Promise(
+//         function (resolve) {
+//             if(location && location !== "קבוצות גדולות") {
+//                 if(location.startsWith("בקיבוץ ") || location.startsWith("קיבוץ  ") || location.startsWith("במושב ") || location.startsWith("מושב ") || location.startsWith("בעיר ")) {
+//                     location = location.replace("בקיבוץ ", "");
+//                     location = location.replace("קיבוץ ", "");
+//                     location = location.replace("במושב ", "");
+//                     location = location.replace("מושב ", "");
+//                     location = location.replace("בעיר ", "");
+//                     location = location.replace("באיזור ", "");
+//                     location = location.replace("איזור ", "");
+//                     location = location.replace("אזור ", "");
+//                     location = location.replace("באיזור ", "");
+//                     location = location.replace(" הארץ", "");
+//
+//                     return resolve(location)
+//                 } else if (location.charAt(0) === 'ב') {
+//                         return resolve(location.substr(1));
+//
+//                     } else return resolve(location)
+//             } else {
+//                 return resolve(undefined)
+//             }
+//         });
+//
+// }
 
-                    return resolve(location)
-                } else if (location.charAt(0) === 'ב') {
-                        return resolve(location.substr(1));
-
-                    } else return resolve(location)
-            } else {
-                return resolve(undefined)
-            }
-        });
-
-}
-
-function nop_cleanup(number_of_people) {
-    return new Promise(
-        function (resolve) {
-            if (number_of_people) {
-                if (isNaN(number_of_people) && number_of_people.charAt(0) === 'ל') number_of_people = number_of_people.substr(1); else number_of_people
-
-                if(!isNaN(number_of_people)){
-                    return resolve(number_of_people);
-                } else {
-                    switch (true) {
-                        case number_of_people.indexOf("שני") > -1:
-                        case number_of_people.indexOf("שתי") > -1:
-                        case number_of_people.indexOf("זוג") > -1:
-                        case number_of_people.indexOf("זוגות") > -1:
-                            return resolve(2);
-                            break;
-
-                        case number_of_people.indexOf("שלוש") > -1:
-                        case number_of_people.indexOf("שלישיה") > -1:
-                            return resolve(3);
-                            break;
-
-                        case number_of_people.indexOf("ארבע") > -1:
-                        case number_of_people.indexOf("רביעיה") > -1:
-                        case number_of_people.indexOf("רביעייה") > -1:
-                            return resolve(4);
-                            break;
-
-                        case number_of_people.indexOf("חמש") > -1:
-                        case number_of_people.indexOf("חמישה") > -1:
-                        case number_of_people.indexOf("חמישיה") > -1:
-                        case number_of_people.indexOf("חמישייה") > -1:
-                            return resolve(5);
-                            break;
-
-                        case number_of_people.indexOf("שש") > -1:
-                        case number_of_people.indexOf("שישה") > -1:
-                        case number_of_people.indexOf("שישיה") > -1:
-                        case number_of_people.indexOf("שישייה") > -1:
-                            return resolve(6);
-                            break;
-
-                        case number_of_people.indexOf("שבע") > -1:
-                        case number_of_people.indexOf("שביעיה") > -1:
-                        case number_of_people.indexOf("שביעייה") > -1:
-                            return resolve(7);
-                            break;
-
-                        case number_of_people.indexOf("שמונה") > -1:
-                        case number_of_people.indexOf("שמיניה") > -1:
-                        case number_of_people.indexOf("שמינייה") > -1:
-                            return resolve(8);
-                            break;
-
-                        case number_of_people.indexOf("תשע") > -1:
-                        case number_of_people.indexOf("תשיעיה") > -1:
-                        case number_of_people.indexOf("תשיעייה") > -1:
-                            return resolve(9);
-                            break;
-
-                        case number_of_people.indexOf("עשר") > -1:
-                        case number_of_people.indexOf("עשיריה") > -1:
-                        case number_of_people.indexOf("עשירייה") > -1:
-                            return resolve(10);
-                            break;
-
-                        default:
-                            return resolve(1);
-                            break;
-
-                    }
-                }
-            } else {
-                return resolve(1);
-            }
-
-        });
-
-}
 
 
 function getRandomDocIndices(num_of_rooms, total) {
@@ -723,6 +651,7 @@ module.exports = {
     findRoomsByCompany: findRoomsByCompany,
     findEasterEgg: findEasterEgg,
     findRoomById: findRoomById,
+    findRoomByRoomRunId: findRoomByRoomRunId,
     findCompaniesByContext: findCompaniesByContext,
     findErrorMessage: findErrorMessage,
     findAllRooms: findAllRooms,
