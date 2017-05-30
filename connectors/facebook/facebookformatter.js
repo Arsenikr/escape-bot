@@ -265,13 +265,13 @@ function createGroupSizeQR() {
         function (resolve) {
 
             let data = {};
-            data["שמיניה"] = "GROUP_SIZE_QR1";
-            data["שביעיה"] = "GROUP_SIZE_QR2";
-            data["שישיה"] = "GROUP_SIZE_QR3";
-            data["חמישיה"] = "GROUP_SIZE_QR4";
-            data["רביעיה"] = "GROUP_SIZE_QR5";
-            data["שלישיה"] = "GROUP_SIZE_QR6";
-            data["זוג"] = "GROUP_SIZE_QR7";
+            data["שמיניה"] = "GROUP_SIZE_Q8";
+            data["שביעיה"] = "GROUP_SIZE_QR7";
+            data["שישיה"] = "GROUP_SIZE_QR6";
+            data["חמישיה"] = "GROUP_SIZE_QR5";
+            data["רביעיה"] = "GROUP_SIZE_QR4";
+            data["שלישיה"] = "GROUP_SIZE_QR3";
+            data["זוג"] = "GROUP_SIZE_QR2";
 
             createQuickReplies(data).then(replies => {
                 resolve(replies)

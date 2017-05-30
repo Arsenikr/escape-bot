@@ -20,7 +20,8 @@
     "node-wit": "^4.2.0",
     "request": "^2.79.0",
     "shuffle-array": "^1.0.1",
-    "tinyurl": "^1.1.2"
+    "tinyurl": "^1.1.2",
+    "utf8": "^2.1.2"
   },
   "devDependencies": {},
   "description": ""

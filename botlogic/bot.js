@@ -9,7 +9,8 @@ const moment = require('moment');
 const Wit = require('node-wit').Wit;
 const FB = require('../connectors/facebook/facebookapi');
 const Formatter = require('../connectors/facebook/facebookformatter');
-
+const fetch = require('node-fetch');
+const utf8 = require('utf8');
 // LETS SAVE USER SESSIONS
 const sessions = {};
 
@@ -48,6 +49,263 @@ function updateSession(sessionId,context) {
     sessions[sessionId].context = context
 }
 
+function handlePostback(recipient, entry, context) {
+    if (typeof context.is_started === 'undefined' && entry.postback === Config.GET_STARTED_PAYLOAD) {
+
+        FB.getUserProfile(recipient).then(profile => {
+            sendStartMessages(context, entry, profile);
+        });
+        // if it is a location callback:
+    } else if (entry.postback === "SEARCH_BY_LOCATION") {
+        context.state = "LOCATION";
+        askForLocation(recipient);
+    } else if (entry.postback === "SEARCH_BY_GROUP_SIZE") {
+        context.state = "GROUP_SIZE";
+        askForGroupSize(recipient);
+    } else if (entry.postback === "SEARCH_BY_COMPANY") {
+        context.state = "SEARCH_BY_COMPANY";
+        askForCompany(recipient, context);
+    } else if (entry.postback === "MORE_FILTERS") {
+        context.state = "MORE_FILTERS";
+        askForMoreFilters(recipient, context);
+    } else if (entry.postback.startsWith('MORE_INFO_')) {
+        FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
+            FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
+
+                let room_name = entry.postback.substring('MORE_INFO_'.length);
+                context.room_name = room_name;
+                handleMoreInfo(context, recipient, room_name)
+            });
+        });
+    } else if (entry.postback.startsWith("MORE_INFO2_")) {
+        FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
+            FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
+
+                let room_name = entry.postback.substring("MORE_INFO2_".length);
+                handleMoreInfo2(context, recipient, room_name)
+            });
+        });
+
+    } else if (entry.postback.startsWith('MORE_ROOMS_')) {
+        setTimeout(function () {
+            FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
+                let slice_index = entry.postback.substring('MORE_ROOMS_'.length);
+                if (context.room_list) {
+                    if (context.room_list.length - slice_index === 1) {
+                        FB.newStructuredMessage(recipient, context.room_list.slice(slice_index))
+                    } else {
+                        FB.newListMessage(recipient, context.room_list, Number(slice_index))
+                    }
+                }
+            }, 5000)
+        });
+    } else if (entry.postback === 'MORE_SEARCH_OPTIONS') {
+        setTimeout(function () {
+            FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש:").then(r => {
+                Formatter.createGeneralMenu(context).then(menu => {
+                    FB.newStructuredMessage(recipient, menu);
+                });
+            })
+        }, 3000);
+
+    } else if (entry.postback === 'NEW_SEARCH' || entry.postback === 'START_NEW_SEARCH' || entry.postback.payload === 'START_NEW_SEARCH') {
+        setTimeout(function () {
+            FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
+                delete context.state;
+                resetSession(context, recipient);
+            })
+        }, 3000);
+    } else if (entry.postback === 'HELP') {
+        setTimeout(function () {
+            let elements = [];
+
+            let videoItem = createVideoItem();
+            elements.push(videoItem);
+
+            FB.newStructuredMessage(recipient, elements).then(r => {
+
+            });
+        }, 3000);
+    } else if (entry.postback === 'DUDA_FOR_ROOM') {
+        setTimeout(function () {
+            context.availability = "פנוי היום";
+            askForDuda(recipient, context)
+        }, 3000);
+    } else if (entry.postback.startsWith("ROOM_FILTER_")) {
+        FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
+            FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
+                let filter = entry.postback.substring("ROOM_FILTER_".length);
+
+                if (filter === "PARALLEL") {
+                    context.is_parallel = true;
+                } else if (filter === "LINEAR") {
+                    context.is_linear = true;
+                } else if (filter === "ACTOR") {
+                    context.is_actor = true;
+                } else if (filter === "HEARING") {
+                    context.is_for_hearing_impaired = true;
+                } else if (filter === "DISABLED") {
+                    context.is_for_disabled = true;
+                } else if (filter === "PREGNANT") {
+                    context.is_for_pregnant = true;
+                } else if (filter === "SCARY") {
+                    context.is_scary = true;
+                } else if (filter === "CHILDREN") {
+                    context.is_for_children = true;
+                } else if (filter === "BEGINNER") {
+                    context.is_beginner = true;
+                } else if (filter === "EXPERIENCED") {
+                    context.is_beginner = false;
+                } else if (filter === "DOUBLE") {
+                    context.is_double = true;
+                } else if (filter === "GROUP") {
+                    context.is_for_groups = true;
+                } else if (filter === "AVAILABLE_TODAY") {
+                    context.availability = "פנוי היום";
+                }
+
+                findEscapeRoomByContext(context).then(context => {
+                    context.state = "";
+                    if (context.room_list && context.room_list.length > 0) {
+                        displayResponse(recipient, context);
+                    } else {
+                        displayErrorMessage(recipient, context).then(r => {
+                            Formatter.drawMenu(context, entry);
+                        });
+                    }
+
+                }).catch(err => {
+                    displayErrorMessage(recipient, context).then(r => {
+                        Formatter.drawMenu(context, entry);
+                    });
+                });
+            });
+        });
+    } else if (entry.postback.startsWith("GROUP_SIZE_QR")) {
+        let group_size = entry.postback.substring("GROUP_SIZE_QR".length);
+        console.log("adding group size: " + group_size);
+        context.num_of_people = group_size;
+        findEscapeRoomByContext(context).then(context => {
+            context.state = "";
+            if (context && context.room_list && context.room_list.length > 0) {
+                displayResponse(recipient, context);
+            }
+        }).catch(err => {
+            displayErrorMessage(recipient, context).then(r => {
+                askForGroupSize(recipient);
+            })
+        });
+    } else if (entry.postback.startsWith("COMPANY_QR")) {
+        console.log("adding company: " + entry.msg);
+        context.company_name = [entry.msg];
+        findEscapeRoomByContext(context).then(context => {
+            context.state = "";
+            if (context && context.room_list && context.room_list.length > 0) {
+                displayResponse(recipient, context);
+            }
+        }).catch(err => {
+            displayErrorMessage(recipient, context).then(r => {
+                askForCompany(recipient);
+            })
+        });
+    } else if (entry.postback.startsWith("LOCATION_QR")) {
+        console.log("adding location: " + entry.msg);
+        context.location = [entry.msg];
+        delete context.lat;
+        delete context.lon;
+
+        findEscapeRoomByContext(context).then(context => {
+            context.state = "";
+            if (context && context.room_list && context.room_list.length > 0) {
+                displayResponse(recipient, context);
+            }
+
+        }).catch(err => {
+            console.log((err));
+            displayErrorMessage(recipient, context).then(r => {
+                askForLocation(recipient);
+            });
+        });
+    }
+}
+
+function handleQR(recipient, entry, context) {
+    if (entry.qr.startsWith("NEW_SEARCH")) {
+        setTimeout(function () {
+            FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
+                delete context.state;
+                resetSession(context, recipient);
+            })
+        }, 3000);
+    }
+}
+function handleAttachments(recipient, entry, context) {
+    if (entry.attachments[0] && entry.attachments[0].coordinates) {
+        let lat = entry.attachments[0].coordinates.lat;
+        let lon = entry.attachments[0].coordinates.long;
+        console.log("received user location: " + lat + "," + lon);
+        context.lat = lat;
+        context.lon = lon;
+        delete context.location;
+        findEscapeRoomByContext(context).then(context => {
+            context.state = "";
+            if (context.room_list && context.room_list.length > 0) {
+                displayResponse(recipient, context);
+            } else {
+                displayErrorMessage(recipient, context).then(r => {
+                    Formatter.drawMenu(context, entry);
+                });
+            }
+        }).catch(err => {
+            console.log(error);
+            displayErrorMessage(recipient, context).then(r => {
+                askForLocation(recipient);
+            });
+        });
+    } else {
+        // NOT SMART ENOUGH FOR ATTACHMENTS YET
+        FB.newSimpleMessage(recipient, "זה מעניין!")
+    }
+}
+function handleFreeMsgFlow(recipient, sessionId, entry, context) {
+    let message = entry.msg;
+    easterEggs(message).then(function (reply) {
+        if (reply) {
+            FB.newSimpleMessage(recipient, reply)
+        } else {
+            if (!isNaN(message)) {
+                context.num_of_people = [Number(message)];
+                findEscapeRoomByContext(context).then(function (new_context) {
+                    if (new_context && new_context.room_list && new_context.room_list.length > 0) {
+                        displayResponse(recipient, new_context);
+                    }
+                });
+            }
+            else {
+                findRoomByName(context.message).then(function (reply) {
+                    if (reply && reply.length > 0) {
+                        FB.newStructuredMessage(recipient, reply)
+                    } else {
+                        findRoomsByCompany(context, context.message).then(function (reply) {
+                            if (reply && reply.length > 0) {
+                                context.company_name = message;
+                                context.room_list = reply;
+                                displayResponse(recipient, context);
+                            } else {
+                                read(sessionId, context, recipient, context.message)
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    }).catch(err => {
+        console.log(err);
+        FB.newSimpleMessage(entry.sender.id, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
+            Formatter.drawMenu(context, entry);
+        });
+    });
+}
 function mainFlow(source,recipient,entry) {
     FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
         FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
@@ -55,191 +313,14 @@ function mainFlow(source,recipient,entry) {
 
                 let context = sessions[sessionId].context;
                 if (entry && entry.postback) {
-                    if (typeof context.is_started === 'undefined' && entry.postback === Config.GET_STARTED_PAYLOAD) {
-
-                        FB.getUserProfile(recipient).then(profile => {
-                            sendStartMessages(context, entry, profile);
-                        });
-                        // if it is a location callback:
-                    } else if (entry.postback === "SEARCH_BY_LOCATION") {
-                        context.state = "LOCATION";
-                        askForLocation(recipient);
-                    } else if (entry.postback === "SEARCH_BY_GROUP_SIZE") {
-                        context.state = "GROUP_SIZE";
-                        askForGroupSize(recipient);
-                    } else if (entry.postback === "SEARCH_BY_COMPANY") {
-                        context.state = "SEARCH_BY_COMPANY";
-                        askForCompany(recipient, context);
-                    } else if (entry.postback === "MORE_FILTERS") {
-                        context.state = "MORE_FILTERS";
-                        askForMoreFilters(recipient, context);
-                    } else if (entry.postback.startsWith('MORE_INFO_')) {
-                        FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
-                            FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
-
-                                let room_name = entry.postback.substring('MORE_INFO_'.length);
-                                context.room_name = room_name;
-                                handleMoreInfo(context, recipient, room_name)
-                            });
-                        });
-                    } else if (entry.postback.startsWith('MORE_ROOMS_')) {
-                        setTimeout(function () {
-                            FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
-                                let slice_index = entry.postback.substring('MORE_ROOMS_'.length);
-                                if (context.room_list) {
-                                    if (context.room_list.length - slice_index === 1) {
-                                        FB.newStructuredMessage(recipient, context.room_list.slice(slice_index))
-                                    } else {
-                                        FB.newListMessage(recipient, context.room_list, Number(slice_index))
-                                    }
-                                }
-                            }, 5000)
-                        });
-                    } else if (entry.postback === 'MORE_SEARCH_OPTIONS') {
-                        setTimeout(function () {
-                            FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש:").then(r => {
-                                Formatter.createGeneralMenu(context).then(menu => {
-                                    FB.newStructuredMessage(recipient, menu);
-                                });
-                            })
-                        }, 3000);
-
-                    } else if (entry.postback === 'NEW_SEARCH' || entry.postback.payload === 'START_NEW_SEARCH') {
-                        setTimeout(function () {
-                            FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
-                                delete context.state;
-                                resetSession(context, recipient);
-                            })
-                        }, 3000);
-                    } else if (entry.postback === 'HELP') {
-                        setTimeout(function () {
-                            let elements = [];
-
-                            let videoItem = createVideoItem();
-                            elements.push(videoItem);
-
-                            FB.newStructuredMessage(recipient, elements).then(r => {
-
-                            });
-                        }, 3000);
-                    } else if (entry.postback === 'DUDA_FOR_ROOM') {
-                        setTimeout(function () {
-                            context.availability = "פנוי היום";
-                            askForDuda(recipient,context)
-                        }, 3000);
-                    }
-
+                    handlePostback(recipient, entry, context);
                 } else if (entry && entry.qr) {
-                    if (entry.qr.startsWith("NEW_SEARCH")) {
-                        setTimeout(function () {
-                            FB.newSimpleMessage(recipient, "חיפוש חדש:").then(r => {
-                                delete context.state;
-                                resetSession(context, recipient);
-                            })
-                        }, 3000);
-                    } else if (entry.qr.startsWith("LOCATION_QR")) {
-                        console.log("adding location: " + entry.message.text);
-                        context.location = entry.message.text;
-                        delete context.lat;
-                        delete context.lon;
+                    handleQR(recipient, entry, context);
+                }
+                else if(entry && entry.attachments && entry.attachments.length > 0){
 
-                        findEscapeRoomByContext(context).then(context => {
-                            context.state = "";
-                            if(context && context.room_list && context.room_list.length > 0){
-                                displayResponse(recipient, context);
-                            }
+                    handleAttachments(recipient, entry, context);
 
-                        }).catch(err => {
-                            console.log((err));
-                            displayErrorMessage(recipient, context).then(r => {
-                                askForLocation(recipient);
-                            });
-                        });
-                    } else if (entry.qr.startsWith("GROUP_SIZE_QR")) {
-                        console.log("adding group size: " + entry.message.text);
-                        context.num_of_people = entry.message.text;
-                        findEscapeRoomByContext(context).then(context => {
-                            context.state = "";
-                            if(context && context.room_list && context.room_list.length > 0){
-                                displayResponse(recipient, context);
-                            }
-                        }).catch(err => {
-                            displayErrorMessage(recipient, context).then(r => {
-                                askForGroupSize(recipient);
-                            })
-                        });
-                    } else if (entry.qr.startsWith("COMPANY_QR")) {
-                        console.log("adding company: " + entry.message.text);
-                        context.company_name = entry.message.text;
-                        findEscapeRoomByContext(context).then(context => {
-                            context.state = "";
-                            if(context && context.room_list && context.room_list.length > 0){
-                                displayResponse(recipient, context);
-                            }
-                        }).catch(err => {
-                            displayErrorMessage(recipient, context).then(r => {
-                                askForCompany(recipient);
-                            })
-                        });
-                    } else if (entry.qr.startsWith("MORE_INFO2_")) {
-                        FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
-                            FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
-
-                                let room_name = entry.qr.substring("MORE_INFO2_".length);
-                                handleMoreInfo2(context, recipient, room_name)
-                            });
-                        });
-                    } else if (entry.qr.startsWith("ROOM_FILTER_")) {
-                        FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
-                            FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
-                                let filter = entry.qr.substring("ROOM_FILTER_".length);
-
-                                if (filter === "PARALLEL") {
-                                    context.is_parallel = true;
-                                } else if (filter === "LINEAR") {
-                                    context.is_linear = true;
-                                } else if (filter === "ACTOR") {
-                                    context.is_actor = true;
-                                } else if (filter === "HEARING") {
-                                    context.is_for_hearing_impaired = true;
-                                } else if (filter === "DISABLED") {
-                                    context.is_for_disabled = true;
-                                } else if (filter === "PREGNANT") {
-                                    context.is_for_pregnant = true;
-                                } else if (filter === "SCARY") {
-                                    context.is_scary = true;
-                                } else if (filter === "CHILDREN") {
-                                    context.is_for_children = true;
-                                } else if (filter === "BEGINNER") {
-                                    context.is_beginner = true;
-                                } else if (filter === "EXPERIENCED") {
-                                    context.is_beginner = false;
-                                } else if (filter === "DOUBLE") {
-                                    context.is_double = true;
-                                } else if (filter === "GROUP"){
-                                    context.is_for_groups = true;
-                                } else if (filter === "AVAILABLE_TODAY"){
-                                    context.availability = "פנוי היום";
-                                }
-
-                                findEscapeRoomByContext(context).then(context => {
-                                    context.state = "";
-                                    if(context.room_list && context.room_list.length > 0){
-                                        displayResponse(recipient, context);
-                                    } else {
-                                        displayErrorMessage(recipient, context).then(r => {
-                                            Formatter.drawMenu(context, entry);
-                                        });
-                                    }
-
-                                }).catch(err => {
-                                    displayErrorMessage(recipient, context).then(r => {
-                                        Formatter.drawMenu(context, entry);
-                                    });
-                                });
-                            });
-                        });
-                    }
                 } else if (entry && entry.msg) {
                     context.message = entry.msg;
                     if(entry.msg === "חיפוש חדש") {
@@ -253,76 +334,14 @@ function mainFlow(source,recipient,entry) {
                     } else if(entry.msg.includes("דודא")) {
                         context.availability = "פנוי היום";
                         askForDuda(recipient,context)
-                    } else if (entry.attachments.size > 0) {
-                        if (entry.attachments[0] && entry.attachments[0].coordinates) {
-                            let lat = entry.attachments[0].coordinates.lat;
-                            let lon = entry.attachments[0].coordinates.long;
-                            console.log("received user location: " + lat + "," + lon);
-                            context.lat = lat;
-                            context.lon = lon;
-                            delete context.location;
-                            findEscapeRoomByContext(context).then(context => {
-                                context.state = "";
-                                if(context.room_list && context.room_list.length > 0){
-                                    displayResponse(recipient, context);
-                                } else {
-                                    displayErrorMessage(recipient, context).then(r => {
-                                        Formatter.drawMenu(context, entry);
-                                    });
-                                }
-                            }).catch(err => {
-                                console.log(error);
-                                displayErrorMessage(recipient, context).then(r => {
-                                    askForLocation(recipient);
-                                });
-                            });
-                        } else {
-                            // NOT SMART ENOUGH FOR ATTACHMENTS YET
-                            FB.newSimpleMessage(recipient, "זה מעניין!")
-                        }
                     } else {
-                        let message = entry.msg;
-
-                        easterEggs(message).then(function (reply) {
-                            if (reply) {
-                                FB.newSimpleMessage(recipient, reply)
-                            } else {
-                                if (!isNaN(message)) {
-                                    context.num_of_people = Number(message);
-                                    findEscapeRoomByContext(context).then(function (new_context) {
-                                        if (new_context && new_context.room_list && new_context.room_list.length > 0) {
-                                            displayResponse(recipient, new_context);
-                                        }
-                                    });
-                                }
-                                else {
-                                    findRoomByName(context.message).then(function (reply) {
-                                        if (reply && reply.length > 0) {
-                                            FB.newStructuredMessage(recipient, reply)
-                                        } else {
-                                            findRoomsByCompany(context, context.message).then(function (reply) {
-                                                if (reply && reply.length > 0) {
-                                                    context.company_name = message;
-                                                    context.room_list = reply;
-                                                    displayResponse(recipient, context);
-                                                } else {
-                                                    read(sessionId, context, recipient, context.message)
-                                                }
-                                            });
-                                        }
-                                    });
-                                }
-                            }
-                        }).catch(err => {
-                            console.log(err);
-                            FB.newSimpleMessage(entry.sender.id, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
-                                Formatter.drawMenu(context, entry);
-                            });
-                        });                    }
+                        handleFreeMsgFlow(recipient, sessionId, entry, context);                    }
                 }
             });
+
         });
     });
+
 }
 
 
@@ -385,8 +404,8 @@ function findEscapeRoomByContext(context) {
         function (resolve, reject) {
             DB.findRoomInDb(context).then(response => {
                 if (response) {
-                    if (context.availability) {
-                        Escaper.getAvailableSlots(response,context.availability).then(filtered_response => {
+                    if (context.availability || context.datetime) {
+                        Escaper.getAvailableSlots(response,context.availability,context.datetime).then(filtered_response => {
                             let sorted_rooms = filtered_response.sort( function (a,b) {
                                 let aa = moment(a.first_slot,"HH:mm");
                                 if(a.first_slot <= "06:00") {
@@ -429,15 +448,35 @@ function findEscapeRoomByContext(context) {
 
 function extractResponseFromContext(context) {
     let msg = "";
-    if ( typeof context.availability !== 'undefined' ) {
+    if ( typeof context.availability !== 'undefined' || typeof context.datetime !== 'undefined' ) {
         msg += ", ";
         msg += "פנויים";
 
-        if(context.availability === "פנוי היום" || context.availability === "פנוי" || context.availability === "פנוי הערב" || context.availability.includes("היום") || context.availability.includes("הערב")){
+        if(context.availability === "פנוי היום" || context.availability === "פנוי הערב" || context.availability.includes("היום") || context.availability.includes("הערב")){
             msg += " להיום";
 
         } else if(context.availability === "פנוי מחר" || context.availability.includes("מחר")){
             msg += " למחר";
+        }
+
+        if(context.datetime && context.datetime.from){
+            let day = moment(context.datetime.from);
+
+            day.locale("he");
+
+            if(day.hour() === 0){
+                if(day.format("YYYY-MM-DD") === Escaper.getTodayDate()){
+                    msg += " להיום";
+                } else if(day.format("YYYY-MM-DD") === moment().add(1,'days').format("YYYY-MM-DD")){
+                    msg += " למחר";
+                } else{
+                    msg += " ב";
+                    msg += day.format("dddd")
+                }
+            } else {
+                msg += " ב";
+                msg += day.calendar()
+            }
         }
     }
 
@@ -531,13 +570,34 @@ function extractResponseFromContext(context) {
     if (context.company_name) {
         msg += " של חברת " + context.company_name;
     }
-    if (context.location) {
-        msg += " ב" + context.location;
+    if (context.location && context.location.length > 0) {
+        let locations = " ב";
+        if(context.lat && context.lon){
+            locations = " סביב "
+        }
+
+        for (let i = 0; i < context.location.length; i++) {
+            locations += context.location[i] + " או ";
+        }
+
+            msg += locations.substring(0,locations.length -4)
     } else if (context.lat && context.lon) {
         msg += " סביב המיקום שלך"
     } else msg += " בכל הארץ ";
-    if (!context.is_for_groups && context.num_of_people && !(context.num_of_people === 1)) {
-        msg += " ל" + context.num_of_people + " אנשים"
+    if (!context.is_for_groups && context.num_of_people && context.num_of_people.length > 0) {
+
+        let min_num_of_people = Math.min(...context.num_of_people);
+        let max_num_of_people = Math.max(...context.num_of_people);
+        if(min_num_of_people > 1 && max_num_of_people > 1) {
+            msg += " ל";
+
+            if (min_num_of_people === max_num_of_people) {
+                msg += min_num_of_people
+            } else {
+                msg += min_num_of_people + " עד " + max_num_of_people
+            }
+            msg += " אנשים"
+        }
     }
 
     if ( typeof context.availability !== 'undefined' ) {
@@ -1028,125 +1088,157 @@ let actions = {
 
     findEscapeRoom({sessionId,context, entities}) {
         return new Promise(function (resolve, reject) {
-            let location = firstEntityValue(entities, 'room_location');
-            let num_of_people = firstEntityValue(entities, 'group_size');
-            let room_name = firstEntityValue(entities, 'room_name');
-            let company = firstEntityValue(entities, 'room_company');
-            let category = firstEntityValue(entities, 'room_category');
-            let availability = firstEntityValue(entities, 'room_availability');
-            let datetime = firstEntityValue(entities, 'wit/datetime');
-            let room_info = firstEntityValue(entities, 'room_info');
-            let price = firstEntityValue(entities, 'wit/amount_of_money');
+            console.log(entities);
+            let location = getValues(entities, 'room_location');
+            let num_of_people = getValues(entities, 'group_size');
+            let room_name = getValues(entities, 'room_name');
+            let company = getValues(entities, 'room_company');
+            let categories = getValues(entities, 'room_category');
+            let availability = getValues(entities, 'room_availability');
+            let datetime = getDatetime(entities);
+            let room_info = getValues(entities, 'room_info');
+            let price = getValues(entities, 'amount_of_money');
+
+
 
             console.log("wit received: " + location);
             console.log("wit received: " + num_of_people);
 
 
-            if (location) {
+            if (location.length > 0) {
                 delete context.lat;
                 delete context.lon;
                 context.location = location;
             }
-            if (num_of_people) {
+            if (num_of_people.length > 0) {
                 context.num_of_people = num_of_people;
             }
-            if(availability) {
+
+            if (datetime && datetime.length > 0) {
+                context.availability = "פנוי";
+                context.datetime = datetime[0]
+            }
+
+            if(availability && availability.length > 0) {
                 context.availability = availability
             }
 
-            if(room_name) {
+
+            if(room_name.length > 0) {
                 context.room_name = room_name
             }
 
-            if(company) {
+            if(company.length > 0) {
                 context.company_name = company
             }
 
-            if(category){
-                //TODO generalize into multiple categories
-                context = enrichFlags(context,category)
+            if(categories.length > 0){
+                context = enrichFlags(context,categories)
             }
 
             sessions[sessionId].context = context;
             // updateSession(sessionId,context);
-            return resolve(findEscapeRoomByContext(context))
+            findEscapeRoomByContext(context).then(context => {
+                if (context && context.room_list && context.room_list.length > 0) {
+                    return resolve(context)
+                } else {
+                    if(context.location && context.location.length > 0){
+                        convertLocationToGeo(context.location[0]).then(coords => {
+                            if(coords && coords.lat && coords.lng){
+                                // delete context.location;
+                                context.lat = coords.lat;
+                                context.lon = coords.lng;
+                                sessions[sessionId].context = context;
+                            }
+                            resolve(findEscapeRoomByContext(context))
+                        })
+
+                    }
+                }
+
+                });
+
+
         });
     }
 };
 
-function enrichFlags(context, category) {
+function enrichFlags(context, categories) {
 
-    if (category === "הריון") {
-        console.log("הריון");
-        context.is_for_pregnant = true;
-    }
+    for (let i = 0; i < categories.length; i++) {
 
-    if (category === "נגיש לנגים") {
-        console.log("נכים");
-        context.is_for_disabled = true;
-    }
+        if (categories[i].trim() === "הריון") {
+            console.log("הריון");
+            context.is_for_pregnant = true;
+        }
 
-    if (category === "מותאם לכבדי שמיעה") {
-        console.log("שמיעה");
-        context.is_for_hearing_impaired = true;
-    }
+        if (categories[i].trim() === "נגיש לנגים") {
+            console.log("נכים");
+            context.is_for_disabled = true;
+        }
 
-    if (category === "לילדים") {
-        console.log("ילדים");
-        context.is_for_children = true;
-    }
+        if (categories[i].trim() === "מותאם לכבדי שמיעה") {
+            console.log("שמיעה");
+            context.is_for_hearing_impaired = true;
+        }
 
-    if (category === "מבוגרים") {
-        console.log("מבוגרים");
-        context.is_for_children = false;
-    }
+        if (categories[i].trim() === "לילדים") {
+            console.log("ילדים");
+            context.is_for_children = true;
+        }
 
-    if (category === "אשראי") {
-        console.log("אשראי");
-        context.is_credit_card_accepted = true;
-    }
+        if (categories[i].trim() === "מבוגרים") {
+            console.log("מבוגרים");
+            context.is_for_children = false;
+        }
 
-    if (category === "לא מפחיד") {
-        console.log("לא מפחיד");
-        context.is_scary = false;
+        if (categories[i].trim() === "אשראי") {
+            console.log("אשראי");
+            context.is_credit_card_accepted = true;
+        }
 
-    } else if (category === "מפחיד") {
-        console.log("מפחיד");
-        context.is_scary = true;
-    }
+        if (categories[i].trim() === "לא מפחיד") {
+            console.log("לא מפחיד");
+            context.is_scary = false;
 
-    if (category === "מתחילים") {
-        console.log("מתחילים");
-        context.is_beginner = true;
-    }
-    if (category === "מנוסים") {
-        console.log("מנוסים");
-        context.is_beginner = false;
-    }
+        } else if (categories[i].trim() === "מפחיד") {
+            console.log("מפחיד");
+            context.is_scary = true;
+        }
 
-    if (category === "ליניארי") {
-        console.log("ליניארי");
-        context.is_linear = true;
-    }
+        if (categories[i].trim() === "מתחילים") {
+            console.log("מתחילים");
+            context.is_beginner = true;
+        }
+        if (categories[i].trim() === "מנוסים") {
+            console.log("מנוסים");
+            context.is_beginner = false;
+        }
 
-    if (category === "מקבילי") {
-        console.log("מקבילי");
-        context.is_parallel = false;
-    }
+        if (categories[i].trim() === "ליניארי") {
+            console.log("ליניארי");
+            context.is_linear = true;
+        }
 
-    if (category === "קבוצה גדולה") {
-        console.log("קבוצות גדולות");
-        context.is_for_groups = true;
-    }
+        if (categories[i].trim() === "מקבילי") {
+            console.log("מקבילי");
+            context.is_parallel = false;
+        }
 
-    if (category === "כפול") {
-        console.log("כפול");
-        context.is_double = true;
-    }
+        if (categories[i].trim() === "קבוצה גדולה") {
+            console.log("קבוצות גדולות");
+            context.is_for_groups = true;
+        }
 
-    if (category === "שחקן"){
-        console.log("שחקן");
-        context.is_actor = true;
+        if (categories[i].trim() === "כפול") {
+            console.log("כפול");
+            context.is_double = true;
+        }
+
+        if (categories[i].trim() === "שחקן") {
+            console.log("שחקן");
+            context.is_actor = true;
+        }
     }
     return context
 }
@@ -1199,17 +1291,63 @@ function read(sessionId,context,sender, message) {
         });
 }
 
-function firstEntityValue(entities, entity) {
-    console.log(entities);
-    let val = entities && entities[entity] &&
+function getValues(entities, entity) {
+    let values = [];
+    if(entities && entities[entity] &&
         Array.isArray(entities[entity]) &&
-        entities[entity].length > 0 &&
-        entities[entity][0].value;
+        entities[entity].length > 0) {
 
-    if (!val) {
-        return null
+        for (let i = 0; i < entities[entity].length; i++) {
+
+            if (entities[entity][i].confidence && entities[entity][i].confidence > 0.7) {
+                let val = entities[entity][i].value;
+                let fval = typeof val === 'object' ? val.value : val;
+
+                values.push(fval)
+            }
+        }
     }
-    return typeof val === 'object' ? val.value : val
+    return values;
+}
+
+
+function getDatetime(entities) {
+    let values = [];
+    if (entities && entities['datetime'] &&
+        Array.isArray(entities['datetime']) &&
+        entities['datetime'].length > 0) {
+
+        for (let i = 0; i < entities['datetime'].length; i++) {
+
+            if (entities['datetime'][i].confidence && entities['datetime'][i].confidence > 0.7) {
+                if (entities['datetime'][i].from &&  entities['datetime'][i].to) {
+                    values.push({"from": entities['datetime'][i].from.value, "to": entities['datetime'][i].to.value})
+                } else {
+                    values.push({"from": entities['datetime'][i].value})
+                }
+            }
+        }
+        return values;
+    }
+}
+
+function convertLocationToGeo(location) {
+    return new Promise(
+        function (resolve) {
+            let url = utf8.encode('http://maps.googleapis.com/maps/api/geocode/json?address=' + location);
+            fetch(url)
+                .then(function (res) {
+
+                    return res.json();
+                }).then(function (json) {
+                    if(json.results && json.results[0] && json.results[0].geometry && json.results[0].geometry.location){
+                        resolve(json.results[0].geometry.location)
+                    } else {
+                        resolve(undefined)
+                    }
+            });
+
+        });
 }
 
 
