@@ -1222,7 +1222,7 @@ function enrichFlags(context, categories) {
 
         if (categories[i].trim() === "מקבילי") {
             console.log("מקבילי");
-            context.is_parallel = false;
+            context.is_parallel = true;
         }
 
         if (categories[i].trim() === "קבוצה גדולה") {

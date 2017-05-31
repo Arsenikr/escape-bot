@@ -167,23 +167,49 @@ function chooseNDocs(docs,num_of_docs_to_choose) {
 
 function generateQueryFromContext(context) {
     let loc_query = {};
-    if (context.location) {
-        loc_query = {'$or': [{"location": {'$regex': '^' + context.location + '$'}}, {"region": {'$regex': '^' + context.location + '$'}}]};
-    } else if (context.lat && context.lon) {
+    let single_loc_queries = [];
+    if (context.lat && context.lon) {
         loc_query = {"coordinates": {'$near': {'$geometry': {type: 'Point', coordinates: [context.lat, context.lon]}, '$maxDistance': 500000}}}
+    } else if (context.location && context.location.length > 0) {
+        for (let i = 0; i < context.location.length; i++) {
+            let single_loc_query = {'$or': [{"location": {'$regex': '^' + context.location[i] + '$'}}, {"region": {'$regex': '^' + context.location[i] + '$'}}]};
+            single_loc_queries.push(single_loc_query)
+        }
+
+        if(single_loc_queries.length > 0){
+            loc_query = {'$or': single_loc_queries};
+        }
+
     }
+
     let nop_query = {};
-    if (context.num_of_people > 1) {
-        let single_nop_query  = {'$and': [{"min_players": {'$lte': context.num_of_people}},{"max_players": {'$gte': context.num_of_people}}]};
-        let double_nop_query  = {'$and': [{'is_double': 1},{"min_players": {'$lte': context.num_of_people}},{"max_players": {'$gte': Number(context.num_of_people/2)}}]};
-        nop_query = {'$or': [single_nop_query,double_nop_query]};
+    if (context.num_of_people && context.num_of_people.length > 0) {
+        let min_num_of_people = Math.min(...context.num_of_people);
+        let max_num_of_people = Math.max(...context.num_of_people);
+
+        if(min_num_of_people > 1 && max_num_of_people > 1) {
+            let single_nop_query  = {'$and': [{"min_players": {'$lte': min_num_of_people}},{"max_players": {'$gte': max_num_of_people}}]};
+            let double_nop_query  = {'$and': [{'is_double': 1},{"min_players": {'$lte': min_num_of_people}},{"max_players": {'$gte': Number(max_num_of_people/2)}}]};
+            nop_query = {'$or': [single_nop_query,double_nop_query]};
+        }
     }
 
     let double_query = {};
     if(context.is_double) double_query = {'is_double': 1};
 
     let company_query = {};
-    if (context.company_name) company_query = {"company_name": {'$regex': context.company_name.toLowerCase()}};
+    let single_company_queries = [];
+
+    if (context.company_name && context.company_name.length > 0) {
+        for (let i = 0; i < context.company_name.length; i++) {
+            let single_company_query = company_query = {"company_name": {'$regex': context.company_name[i].toLowerCase()}};
+            single_company_queries.push(single_company_query)
+        }
+
+        if(single_company_queries.length > 0){
+            company_query = {'$or': single_company_queries};
+        }
+    }
 
     let pregnant_query = {};
     if (typeof context.is_for_pregnant !== 'undefined') pregnant_query = {"is_for_pregnant": Number(context.is_for_pregnant)};
@@ -222,9 +248,9 @@ function generateQueryFromContext(context) {
 function findRoomInDb(context) {
     return new Promise(
         function (resolve, reject) {
-            if(context.location && context.location.startsWith("\"")) context.location = context.location.replace("\"","");
+            // if(context.location && context.location.startsWith("\"")) context.location = context.location.replace("\"","");
 
-                if(context.is_for_groups) context.num_of_people = 8;
+                if(context.is_for_groups) context.num_of_people.push(8);
                 console.log(context.num_of_people);
                 let query = generateQueryFromContext(context);
                 EscapeRoom.find(query
@@ -353,7 +379,7 @@ function findRoomsByCompany(context,company_name) {
 
             console.log("trying to find by company: " + company_name);
             let old_company = context.company_name;
-            context.company_name = company_name;
+            context.company_name = [company_name];
 
             if(context.is_for_groups) context.num_of_people = 8;
             let query = generateQueryFromContext(context);
