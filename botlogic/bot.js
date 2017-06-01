@@ -464,18 +464,20 @@ function extractResponseFromContext(context) {
 
             day.locale("he");
 
-            if(day.hour() === 0){
+            if(context.datetime.grain === "day" && day.hour() === 0){
                 if(day.format("YYYY-MM-DD") === Escaper.getTodayDate()){
                     msg += " להיום";
                 } else if(day.format("YYYY-MM-DD") === moment().add(1,'days').format("YYYY-MM-DD")){
                     msg += " למחר";
-                } else{
-                    msg += " ב";
-                    msg += day.format("dddd")
                 }
-            } else {
-                msg += " ב";
-                msg += day.calendar()
+            }  else {
+                let formatted_day = day.calendar();
+                if(!formatted_day.includes("היום") && !formatted_day.includes("מחר")){
+                    msg += " ב";
+                } else {
+                    msg += " "
+                }
+                msg += formatted_day
             }
         }
     }
@@ -1321,15 +1323,35 @@ function getDatetime(entities) {
 
             if (entities['datetime'][i].confidence && entities['datetime'][i].confidence > 0.7) {
                 if (entities['datetime'][i].from &&  entities['datetime'][i].to) {
-                    values.push({"from": entities['datetime'][i].from.value, "to": entities['datetime'][i].to.value})
+                    let from_date = convertWeeHoursToToday(entities['datetime'][i].from.value,entities['datetime'][i].from.grain);
+                    let to_date = convertWeeHoursToToday(entities['datetime'][i].to.value,entities['datetime'][i].to.grain);
+                    values.push({"from":from_date, "to": to_date,"grain":entities['datetime'][i].from.grain })
                 } else {
-                    values.push({"from": entities['datetime'][i].value})
+                    let from_date = convertWeeHoursToToday(entities['datetime'][i].value,entities['datetime'][i].grain);
+                    values.push({"from": from_date,"grain":entities['datetime'][i].grain})
                 }
             }
         }
         return values;
     }
 }
+
+function convertWeeHoursToToday(date,grain) {
+    let date_moment = moment(date);
+    let formatted_date = Escaper.formatDate(date_moment);
+    let tomorrow_date = Escaper.formatDate(moment().add(1,'days'));
+
+    if(grain === 'hour'){
+        if(formatted_date === tomorrow_date && date_moment.get("hour") >= 0 && date_moment.get("hour") <= 6 ) {
+           return date_moment.subtract(1,'days').format()
+        } else {
+            return date
+        }
+    } else {
+        return date
+    }
+}
+
 
 function convertLocationToGeo(location) {
     return new Promise(

@@ -26,13 +26,17 @@ function getAvailableSlots(rooms,availability,datetime) {
         function (resolve) {
             let date = getTodayDate();
             let hour = '0:00';
+            let grain = datetime.grain;
+
             if(datetime && datetime.from){
-                date = formatDate(moment(datetime.from));
-                hour = formatHour(moment(datetime.from));
+
+               let from_date = moment(datetime.from);
+               let date = formatDate(from_date);
+
             } else {
-                if(availability === "פנוי היום" || availability === "פנוי" || availability === "פנוי הערב" || availability.includes("היום") || availability.includes("הערב")){
+                if(availability && availability === "פנוי היום" || availability === "פנוי" || availability === "פנוי הערב" || availability.includes("היום") || availability.includes("הערב")){
                     date = getTodayDate();
-                } else if(availability === "פנוי מחר" || availability.includes("מחר")){
+                } else if(availability && availability === "פנוי מחר" || availability.includes("מחר")){
                     date = formatDate(moment().add(1,'days'))
                 } else {
                     date = getTodayDate();
@@ -47,7 +51,7 @@ function getAvailableSlots(rooms,availability,datetime) {
                     let available_rooms = [];
                     for(let i in rooms){
                         if(typeof rooms[i].escaper_id !== 'undefined' && json[rooms[i].escaper_id].slots.length > 0 ){
-                            let filtered_slots = filterSlots(json[rooms[i].escaper_id].slots,hour);
+                            let filtered_slots = filterSlots(json[rooms[i].escaper_id].slots,hour,grain);
                             rooms[i].first_slot = filtered_slots[0];
                             rooms[i].slots = filtered_slots;
                             available_rooms.push(rooms[i])
@@ -58,9 +62,9 @@ function getAvailableSlots(rooms,availability,datetime) {
         });
 }
 
-function filterSlots(slots, hour) {
+function filterSlots(slots, hour,grain) {
 
-    if(hour === "0:00"){
+    if(grain === "day"){
         return slots
     } else {
         let parsed_hour = moment(hour,"HH:mm");
@@ -69,7 +73,11 @@ function filterSlots(slots, hour) {
             let parsed_slot = moment(slot,"HH:mm");
             let parsed_six_am = moment("6:00","HH:mm");
 
-            if( parsed_slot > parsed_six_am && parsed_slot < parsed_hour) return false; else return true;
+            if(parsed_hour.get("hour") >= 0 && parsed_hour.get("hour") <= 6){
+                if( parsed_slot >= parsed_hour && parsed_slot < parsed_six_am ) return true; else return false;
+            } else {
+                if( parsed_slot > parsed_six_am && parsed_slot < parsed_hour) return false; else return true;
+            }
         })
     }
 }
@@ -92,5 +100,6 @@ function formatHour(date) {
 module.exports = {
     getAvailableSlots: getAvailableSlots,
     getAvailableSlotsForToday: getAvailableSlotsForToday,
-    getTodayDate: getTodayDate
+    getTodayDate: getTodayDate,
+    formatDate: formatDate
 };
