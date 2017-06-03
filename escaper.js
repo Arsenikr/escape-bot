@@ -26,12 +26,15 @@ function getAvailableSlots(rooms,availability,datetime) {
         function (resolve) {
             let date = getTodayDate();
             let hour = '0:00';
-            let grain = datetime.grain;
+            let grain = "day";
+            if(datetime && datetime.grain){
+                grain = datetime.grain;
+            }
 
             if(datetime && datetime.from){
 
                let from_date = moment(datetime.from);
-               let date = formatDate(from_date);
+               date = formatDate(from_date);
 
             } else {
                 if(availability && availability === "פנוי היום" || availability === "פנוי" || availability === "פנוי הערב" || availability.includes("היום") || availability.includes("הערב")){
@@ -43,18 +46,22 @@ function getAvailableSlots(rooms,availability,datetime) {
                 }
             }
 
+            console.log(date);
             fetch('http://www.escaper.co.il/api/get_date?date=' + date + '&key=' + Config.ESCAPER_KEY)
                 .then(function (res) {
 
                     return res.json();
                 }).then(function (json) {
                     let available_rooms = [];
+                    console.log(hour);
                     for(let i in rooms){
                         if(typeof rooms[i].escaper_id !== 'undefined' && json[rooms[i].escaper_id].slots.length > 0 ){
                             let filtered_slots = filterSlots(json[rooms[i].escaper_id].slots,hour,grain);
-                            rooms[i].first_slot = filtered_slots[0];
-                            rooms[i].slots = filtered_slots;
-                            available_rooms.push(rooms[i])
+                            if(filtered_slots.length > 0){
+                                rooms[i].first_slot = filtered_slots[0];
+                                rooms[i].slots = filtered_slots;
+                                available_rooms.push(rooms[i])
+                            }
                         }
                     }
                 resolve(available_rooms)
