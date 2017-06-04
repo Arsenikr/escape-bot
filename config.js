@@ -1,10 +1,8 @@
 'use strict';
 
 const NEW_WIT_TOKEN = '2BWX44CBYKUGO2EUZLEXK5WZQQVMN3HJ';
-// const PROD_WIT_TOKEN = 'J4NWMZFXGMB3NIUJV72BMO7XBZBPGSGY';
 
 const WIT_TOKEN = process.env.WIT_TOKEN || NEW_WIT_TOKEN;
-// const WIT_TOKEN = process.env.WIT_TOKEN || PROD_WIT_TOKEN;
 if (!WIT_TOKEN) {
   throw new Error('Missing WIT_TOKEN. Go to https://wit.ai/docs/quickstart to get one.')
 }
