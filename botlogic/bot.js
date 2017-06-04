@@ -469,6 +469,10 @@ function extractResponseFromContext(context) {
                     msg += " להיום";
                 } else if(day.format("YYYY-MM-DD") === moment().add(1,'days').format("YYYY-MM-DD")){
                     msg += " למחר";
+                } else {
+                    let formatted_day = day.format("dddd");
+                    msg += " ב";
+                    msg += formatted_day
                 }
             }  else {
                 let formatted_day = day.calendar();
