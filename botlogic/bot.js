@@ -129,6 +129,7 @@ function handlePostback(recipient, entry, context) {
     } else if (entry.postback === 'DUDA_FOR_ROOM') {
         setTimeout(function () {
             context.availability = "פנוי היום";
+            context.is_duda = true;
             askForDuda(recipient, context)
         }, 3000);
     } else if (entry.postback.startsWith("ROOM_FILTER_")) {
@@ -1064,6 +1065,7 @@ function resetSession(context, recipient) {
     delete context.is_double;
     delete context.is_for_groups;
     delete context.availability;
+    delete context.is_duda;
 
 
     Formatter.createGeneralMenu(context).then(menu => {
@@ -1105,16 +1107,14 @@ let actions = {
             let room_info = getValues(entities, 'room_info');
             let price = getValues(entities, 'amount_of_money');
 
-
-
             console.log("wit received: " + location);
             console.log("wit received: " + num_of_people);
-
 
             if (location.length > 0) {
                 delete context.lat;
                 delete context.lon;
                 context.location = location;
+
             }
             if (num_of_people.length > 0) {
                 context.num_of_people = num_of_people;
