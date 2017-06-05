@@ -1051,6 +1051,7 @@ function resetSession(context, recipient) {
     delete context.location;
     delete context.num_of_people;
     delete context.room_list;
+    delete context.room_name;
     delete context.room_id;
     delete context.company_name;
     delete context.lat;
