@@ -129,6 +129,7 @@ function handlePostback(recipient, entry, context) {
     } else if (entry.postback === 'DUDA_FOR_ROOM') {
         setTimeout(function () {
             context.availability = "פנוי היום";
+            delete context.datetime;
             context.is_duda = true;
             askForDuda(recipient, context)
         }, 3000);
@@ -334,6 +335,7 @@ function mainFlow(source,recipient,entry) {
 
                     } else if(entry.msg.includes("דודא")) {
                         context.availability = "פנוי היום";
+                        delete context.datetime;
                         askForDuda(recipient,context)
                     } else {
                         handleFreeMsgFlow(recipient, sessionId, entry, context);                    }
