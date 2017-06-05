@@ -198,14 +198,25 @@ function generateQueryFromContext(context) {
     if(context.is_double) double_query = {'is_double': 1};
 
     let room_name_query = {};
-    if(context.room_name) room_name_query = {"room_name": context.room_name.toLowerCase()};
+    let single_room_name_queries = [];
+
+    if (context.room_name && context.room_name.length > 0) {
+        for (let i = 0; i < context.room_name.length; i++) {
+            let single_room_name_query =  {"room_name": context.room_name[i].toLowerCase()};
+            single_room_name_queries.push(single_room_name_query)
+        }
+
+        if(single_room_name_queries.length > 0){
+            room_name_query = {'$or': single_room_name_queries};
+        }
+    }
 
     let company_query = {};
     let single_company_queries = [];
 
     if (context.company_name && context.company_name.length > 0) {
         for (let i = 0; i < context.company_name.length; i++) {
-            let single_company_query = company_query = {"company_name": {'$regex': context.company_name[i].toLowerCase()}};
+            let single_company_query = {"company_name": {'$regex': context.company_name[i].toLowerCase()}};
             single_company_queries.push(single_company_query)
         }
 
