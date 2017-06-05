@@ -35,6 +35,9 @@ function getAvailableSlots(rooms,availability,datetime) {
 
                let from_date = moment(datetime.from);
                date = formatDate(from_date);
+               if(grain && grain === "hour"){
+                hour = formatHour(moment(datetime.from));
+               }
 
             } else {
                 if(availability && availability === "פנוי היום" || availability === "פנוי" || availability === "פנוי הערב" || availability.includes("היום") || availability.includes("הערב")){
