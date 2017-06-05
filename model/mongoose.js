@@ -197,6 +197,9 @@ function generateQueryFromContext(context) {
     let double_query = {};
     if(context.is_double) double_query = {'is_double': 1};
 
+    let room_name_query = {};
+    if(context.room_name) room_name_query = {"room_name": context.room_name.toLowerCase()};
+
     let company_query = {};
     let single_company_queries = [];
 
@@ -241,7 +244,7 @@ function generateQueryFromContext(context) {
     let parallel_query = {};
     if (typeof context.is_parallel !== 'undefined') parallel_query = {"is_parallel": Number(context.is_parallel)};
 
-    let query = {'$and': [loc_query, nop_query, company_query, pregnant_query, double_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query,actor_query, linear_query, parallel_query]};
+    let query = {'$and': [loc_query, nop_query, company_query, room_name_query, pregnant_query, double_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query,actor_query, linear_query, parallel_query]};
     return query;
 }
 
