@@ -53,7 +53,7 @@ function handlePostback(recipient, entry, context) {
     if (typeof context.is_started === 'undefined' && entry.postback === Config.GET_STARTED_PAYLOAD) {
 
         FB.getUserProfile(recipient).then(profile => {
-            sendStartMessages(context, entry, profile);
+            sendStartMessages(context, recipient, profile);
         });
         // if it is a location callback:
     } else if (entry.postback === "SEARCH_BY_LOCATION") {
@@ -965,9 +965,8 @@ function handleMoreInfo2(context, recipient, room_id) {
         });
 }
 
-function sendStartMessages(context, entry, profile) {
+function sendStartMessages(context,recipient, profile) {
     setTimeout(function () {
-        let recipient = entry.sender.id;
         FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
 
             let fname = profile.first_name || "בוטן";

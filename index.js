@@ -46,31 +46,35 @@ function handleError(res, reason, message, code) {
 app.post('/webhook', function (req, res) {
     let entry = FB.getMessageEntry(req.body);
     res.sendStatus(200);
-    let recipient = entry.sender.id;
+    if(entry && entry.sender){
+        let recipient = entry.sender.id;
 
-    let postback = undefined;
-    if(entry && entry.postback) postback = entry.postback.payload;
+        let postback = undefined;
+        if(entry.postback) postback = entry.postback.payload;
 
-    let qr = undefined;
-    if(entry && entry.message && entry.message.quick_reply) postback = entry.message.quick_reply.payload;
+        let qr = undefined;
+        if(entry.message && entry.message.quick_reply) postback = entry.message.quick_reply.payload;
 
-    let msg = undefined;
-    if(entry && entry.message) msg = entry.message.text;
+        let msg = undefined;
+        if(entry.message) msg = entry.message.text;
 
 
-    let attachments = [];
-    if(entry && entry.message && entry.message.attachments)
-    for (let value of entry.message.attachments) {
-        attachments.push(value.payload);
+        let attachments = [];
+        if(entry.message && entry.message.attachments)
+            for (let value of entry.message.attachments) {
+                attachments.push(value.payload);
+            }
+
+        let inputobj = {
+            msg: msg,
+            attachments: attachments,
+            postback: postback,
+            qr: qr
+        };
+        Bot.mainFlow("facebook",recipient,inputobj)
+    } else {
+        console.log("failed to get recipient id from entry " + req.body)
     }
-
-    let inputobj = {
-        msg: msg,
-        attachments: attachments,
-        postback: postback,
-        qr: qr
-    };
-    Bot.mainFlow("facebook",recipient,inputobj)
 });
 
 
