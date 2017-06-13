@@ -272,35 +272,34 @@ function handleAttachments(recipient, entry, context) {
 function handleFreeMsgFlow(recipient, sessionId, entry, context) {
     let message = entry.msg;
     easterEggs(message).then(function (reply) {
-        if (reply) {
-            FB.newSimpleMessage(recipient, reply)
-        } else {
-            if (!isNaN(message)) {
-                context.num_of_people = [Number(message)];
-                findEscapeRoomByContext(context).then(function (new_context) {
-                    if (new_context && new_context.room_list && new_context.room_list.length > 0) {
-                        displayResponse(recipient, new_context);
-                    }
-                });
-            }
-            else {
-                findRoomByName(context.message).then(function (reply) {
-                    if (reply && reply.length > 0) {
-                        FB.newStructuredMessage(recipient, reply)
-                    } else {
-                        findRoomsByCompany(context, context.message).then(function (reply) {
-                            if (reply && reply.length > 0) {
-                                context.company_name = message;
-                                context.room_list = reply;
-                                displayResponse(recipient, context);
-                            } else {
-                                read(sessionId, context, recipient, context.message)
-                            }
-                        });
-                    }
-                });
-            }
-        }
+            FB.newSimpleMessage(recipient, reply).then(reply => {
+                if (!isNaN(message)) {
+                    context.num_of_people = [Number(message)];
+                    findEscapeRoomByContext(context).then(function (new_context) {
+                        if (new_context && new_context.room_list && new_context.room_list.length > 0) {
+                            displayResponse(recipient, new_context);
+                        }
+                    });
+                }
+                else {
+                    findRoomByName(context.message).then(function (reply) {
+                        if (reply && reply.length > 0) {
+                            FB.newStructuredMessage(recipient, reply)
+                        } else {
+                            findRoomsByCompany(context, context.message).then(function (reply) {
+                                if (reply && reply.length > 0) {
+                                    context.company_name = message;
+                                    context.room_list = reply;
+                                    displayResponse(recipient, context);
+                                } else {
+                                    read(sessionId, context, recipient, context.message)
+                                }
+                            });
+                        }
+                    });
+                }
+
+        })
     }).catch(err => {
         console.log(err);
         FB.newSimpleMessage(entry.sender.id, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
