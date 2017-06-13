@@ -264,7 +264,7 @@ function findRoomInDb(context) {
         function (resolve, reject) {
             // if(context.location && context.location.startsWith("\"")) context.location = context.location.replace("\"","");
 
-                if(context.is_for_groups) context.num_of_people.push(8);
+                if(context.is_for_groups) context.num_of_people = 8;
                 console.log(context.num_of_people);
                 let query = generateQueryFromContext(context);
                 EscapeRoom.find(query
