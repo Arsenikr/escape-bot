@@ -3,6 +3,7 @@
  */
 const GeoPoint = require('geopoint');
 const FB = require('./facebookapi');
+const Config = require('../../config');
 
 function createRoomsList(context,response) {
     let list = [];
