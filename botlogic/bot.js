@@ -281,7 +281,7 @@ function handleFreeMsgFlow(recipient, sessionId, entry, context) {
                     });
                 }
                 else {
-                    findRoomByName(context.message).then(function (reply) {
+                    findRoomByName(context,context.message).then(function (reply) {
                         if (reply && reply.length > 0) {
                             FB.newStructuredMessage(recipient, reply)
                         } else {
@@ -964,20 +964,28 @@ function handleMoreInfo2(context, recipient, room_id) {
                             elements.push(mapItem);
 
                             FB.newStructuredMessage(recipient, elements).then(r => {
-
-
-
-                                let msg_list = [];
-                                let buttons = [];
-                                buttons.push(Formatter.createPhoneButton(room.phone));
-                                buttons.push(Formatter.createPhoneButton(room.phone_2));
-                                FB.newButtonsMessage(recipient, "מספרי טלפון:", buttons).then(r => {
+                                if(room.phone){
+                                    let buttons = [];
+                                    buttons.push(Formatter.createPhoneButton(room.phone));
+                                    if(room.phone_2){
+                                        buttons.push(Formatter.createPhoneButton(room.phone_2));
+                                    }
+                                    FB.newButtonsMessage(recipient, "מספרי טלפון:", buttons).then(r => {
+                                        let msg_list = [];
+                                        msg_list.push(formatDiscounts(room, msg_list));
+                                        let merged_msg = merge_msg_list(formatRoomFilters(room));
+                                        FB.newSimpleMessage(recipient, merged_msg).then( r => {
+                                            resolve(context);
+                                        });
+                                    });
+                                } else {
+                                    let msg_list = [];
                                     msg_list.push(formatDiscounts(room, msg_list));
                                     let merged_msg = merge_msg_list(formatRoomFilters(room));
                                     FB.newSimpleMessage(recipient, merged_msg).then( r => {
                                         resolve(context);
                                     });
-                                });
+                                }
                         });
 
                     });
