@@ -997,7 +997,6 @@ function handleMoreInfo2(context, recipient, room_id) {
 
 function sendStartMessages(context,recipient, profile) {
     setTimeout(function () {
-        let recipient = entry.sender.id;
         FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
 
             let fname = profile.first_name || "בוטן";
