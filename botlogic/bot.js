@@ -53,7 +53,7 @@ function handlePostback(recipient, entry, context) {
     if (typeof context.is_started === 'undefined' && entry.postback === Config.GET_STARTED_PAYLOAD) {
 
         FB.getUserProfile(recipient).then(profile => {
-            sendStartMessages(context, entry, profile);
+            sendStartMessages(context, recipient, profile);
         });
         // if it is a location callback:
     } else if (entry.postback === "SEARCH_BY_LOCATION") {
@@ -271,35 +271,34 @@ function handleAttachments(recipient, entry, context) {
 function handleFreeMsgFlow(recipient, sessionId, entry, context) {
     let message = entry.msg;
     easterEggs(message).then(function (reply) {
-        if (reply) {
-            FB.newSimpleMessage(recipient, reply)
-        } else {
-            if (!isNaN(message)) {
-                context.num_of_people = [Number(message)];
-                findEscapeRoomByContext(context).then(function (new_context) {
-                    if (new_context && new_context.room_list && new_context.room_list.length > 0) {
-                        displayResponse(recipient, new_context);
-                    }
-                });
-            }
-            else {
-                findRoomByName(context, context.message).then(function (reply) {
-                    if (reply && reply.length > 0) {
-                        FB.newStructuredMessage(recipient, reply)
-                    } else {
-                        findRoomsByCompany(context, context.message).then(function (reply) {
-                            if (reply && reply.length > 0) {
-                                context.company_name = message;
-                                context.room_list = reply;
-                                displayResponse(recipient, context);
-                            } else {
-                                read(sessionId, context, recipient, context.message)
-                            }
-                        });
-                    }
-                });
-            }
-        }
+            FB.newSimpleMessage(recipient, reply).then(reply => {
+                if (!isNaN(message)) {
+                    context.num_of_people = [Number(message)];
+                    findEscapeRoomByContext(context).then(function (new_context) {
+                        if (new_context && new_context.room_list && new_context.room_list.length > 0) {
+                            displayResponse(recipient, new_context);
+                        }
+                    });
+                }
+                else {
+                    findRoomByName(context.message).then(function (reply) {
+                        if (reply && reply.length > 0) {
+                            FB.newStructuredMessage(recipient, reply)
+                        } else {
+                            findRoomsByCompany(context, context.message).then(function (reply) {
+                                if (reply && reply.length > 0) {
+                                    context.company_name = message;
+                                    context.room_list = reply;
+                                    displayResponse(recipient, context);
+                                } else {
+                                    read(sessionId, context, recipient, context.message)
+                                }
+                            });
+                        }
+                    });
+                }
+
+        })
     }).catch(err => {
         console.log(err);
         FB.newSimpleMessage(entry.sender.id, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
@@ -988,7 +987,7 @@ function handleMoreInfo2(context, recipient, room_id) {
         });
 }
 
-function sendStartMessages(context, entry, profile) {
+function sendStartMessages(context,recipient, profile) {
     setTimeout(function () {
         let recipient = entry.sender.id;
         FB.newSenderAction(recipient, Config.TYPING_OFF).then(_ => {
@@ -1074,6 +1073,7 @@ function resetSession(context, recipient) {
     delete context.location;
     delete context.num_of_people;
     delete context.room_list;
+    delete context.room_name;
     delete context.room_id;
     delete context.room_info;
     delete context.company_name;

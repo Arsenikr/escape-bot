@@ -197,12 +197,26 @@ function generateQueryFromContext(context) {
     let double_query = {};
     if(context.is_double) double_query = {'is_double': 1};
 
+    let room_name_query = {};
+    let single_room_name_queries = [];
+
+    if (context.room_name && context.room_name.length > 0) {
+        for (let i = 0; i < context.room_name.length; i++) {
+            let single_room_name_query =  {"room_name": context.room_name[i].toLowerCase()};
+            single_room_name_queries.push(single_room_name_query)
+        }
+
+        if(single_room_name_queries.length > 0){
+            room_name_query = {'$or': single_room_name_queries};
+        }
+    }
+
     let company_query = {};
     let single_company_queries = [];
 
     if (context.company_name && context.company_name.length > 0) {
         for (let i = 0; i < context.company_name.length; i++) {
-            let single_company_query = company_query = {"company_name": {'$regex': context.company_name[i].toLowerCase()}};
+            let single_company_query = {"company_name": {'$regex': context.company_name[i].toLowerCase()}};
             single_company_queries.push(single_company_query)
         }
 
@@ -241,7 +255,7 @@ function generateQueryFromContext(context) {
     let parallel_query = {};
     if (typeof context.is_parallel !== 'undefined') parallel_query = {"is_parallel": Number(context.is_parallel)};
 
-    let query = {'$and': [loc_query, nop_query, company_query, pregnant_query, double_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query,actor_query, linear_query, parallel_query]};
+    let query = {'$and': [loc_query, nop_query, company_query, room_name_query, pregnant_query, double_query, disabled_query, kids_query, credit_query, scary_query, beginner_query, hearing_query,actor_query, linear_query, parallel_query]};
     return query;
 }
 
@@ -250,7 +264,7 @@ function findRoomInDb(context) {
         function (resolve, reject) {
             // if(context.location && context.location.startsWith("\"")) context.location = context.location.replace("\"","");
 
-                if(context.is_for_groups) context.num_of_people.push(8);
+                if(context.is_for_groups) context.num_of_people = 8;
                 console.log(context.num_of_people);
                 let query = generateQueryFromContext(context);
                 EscapeRoom.find(query

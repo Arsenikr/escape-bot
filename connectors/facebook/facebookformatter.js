@@ -108,7 +108,7 @@ function createVideoItem() {
     return {
         title: "סרטון הדרכה קצר על הבוט: ",
         image_url: "https://s29.postimg.org/989go7hwn/16422306_212997062506914_6981554859388634041_o.jpg",
-        item_url: "https:\/\/www.facebook.com\/escaperoombot\/videos\/236731916800095\/"
+        item_url: "https:\/\/www.facebook.com\/escapebotil\/videos\/236731916800095\/"
     }
 }
 
