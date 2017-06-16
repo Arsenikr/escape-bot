@@ -72,9 +72,8 @@ function handlePostback(recipient, entry, context) {
         FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
             FB.newSenderAction(recipient, Config.TYPING_ON).then(_ => {
 
-                let room_name = entry.postback.substring('MORE_INFO_'.length);
-                context.room_name = room_name;
-                handleMoreInfo(context, recipient, room_name)
+                let room_id = entry.postback.substring('MORE_INFO_'.length);
+                handleMoreInfo(context, recipient, room_id)
             });
         });
     } else if (entry.postback.startsWith("MORE_INFO2_")) {
@@ -284,7 +283,7 @@ function handleFreeMsgFlow(recipient, sessionId, entry, context) {
                 });
             }
             else {
-                findRoomByName(context.message).then(function (reply) {
+                findRoomByName(context, context.message).then(function (reply) {
                     if (reply && reply.length > 0) {
                         FB.newStructuredMessage(recipient, reply)
                     } else {
@@ -374,8 +373,9 @@ function findRoomByName(context,message) {
     return new Promise(
         function (resolve, reject) {
 
-            DB.findRoomByName(context,message).then(function (response) {
+            DB.findRoomByName(message).then(function (response) {
                 if (response) {
+                    context.room_id = response[0].room_id;
                     return resolve(Formatter.createRoomsList(context,response,true));
                 } else {
                     return resolve(undefined);
@@ -708,6 +708,164 @@ function calculateAveragePrice(room, isWeekend) {
 
 }
 
+function merge_msg_list(msg_list) {
+    let merged_msg = "";
+    for (let key in msg_list) {
+        merged_msg += msg_list[key] + "\n";
+    }
+    return merged_msg;
+}
+function formatPriceInfo(context, room) {
+    let msg_list = [];
+    if (typeof context.is_for_groups === 'undefined' && context.num_of_people > 1 && context.num_of_people < 10 && room['price_' + context.num_of_people] && room['weekend_price_' + context.num_of_people]) {
+        msg_list.push("לקבוצה של " + context.num_of_people + ": ");
+        msg_list.push("מחיר לשחקן באמצע שבוע: " + room['price_' + context.num_of_people] + " שקלים");
+        msg_list.push("מחיר לשחקן בסוף שבוע: " + room['weekend_price_' + context.num_of_people] + " שקלים")
+    } else {
+        let weekday_avg = calculateAveragePrice(room, false);
+        let weekend_avg = calculateAveragePrice(room, true);
+        if (!isNaN(weekday_avg)) {
+            msg_list.push("מחיר ממוצע לשחקן באמצע שבוע: " + calculateAveragePrice(room, false) + " שקלים");
+        }
+
+        if (!isNaN(weekend_avg)) {
+            msg_list.push("מחיר ממוצע לשחקן בסוף שבוע: " + calculateAveragePrice(room, true) + " שקלים")
+        }
+    }
+    return msg_list;
+}
+function formatAvailableSlots(room, slots) {
+    let msg_list = [];
+
+    if (slots.length > 0) {
+        msg_list.push("שעות פנויות להיום: ");
+        msg_list.push("");
+        for (let i in slots) {
+            msg_list.push("" + slots[i])
+        }
+        msg_list.push("");
+        msg_list.push("להזמנות: " + room.website)
+    } else {
+        msg_list.push("אין שעות פנויות להיום!");
+    }
+    msg_list.push("");
+    msg_list.push("המידע באדיבות www.escaper.co.il");
+    return msg_list;
+
+}
+
+function formatDiscounts(room) {
+    let msg_list = [];
+    if (room.soldier_discount || room.soldier_discount_weekend || room.student_discount || room.student_discount_weekend || room.children_discount || room.children_discount_weekend) {
+        msg_list.push("הנחות:");
+
+        let soldier_discount = undefined;
+        if (room.soldier_discount) {
+            soldier_discount = "לחיילים " + room.soldier_discount + "% באמצע שבוע";
+        }
+
+        if (room.soldier_discount_weekend) {
+            soldier_discount += ", ו " + room.soldier_discount_weekend + "% בסוף שבוע"
+        }
+        if (soldier_discount) {
+            msg_list.push(soldier_discount);
+        }
+
+        let student_discount = undefined;
+        if (room.student_discount) {
+            student_discount = "לסטודנטים " + room.student_discount + "% באמצע שבוע";
+        }
+
+        if (room.student_discount_weekend) {
+            student_discount += ", ו " + room.student_discount_weekend + "% בסוף שבוע"
+        }
+        if (student_discount) {
+            msg_list.push(student_discount);
+        }
+
+        let children_discount = undefined;
+        if (room.children_discount) {
+            children_discount = "לילדים " + room.children_discount + "% באמצע שבוע";
+        }
+
+        if (room.children_discount_weekend) {
+            children_discount += ", ו " + room.children_discount_weekend + "% בסוף שבוע"
+        }
+        if (children_discount) {
+            msg_list.push(children_discount);
+        }
+    }
+    return msg_list;
+}
+function formatRoomFilters(room) {
+    let msg_list = [];
+    if (room.is_beginner) {
+        let bool = Boolean(room.is_beginner);
+        let msg = "";
+        if (!bool) msg += " לא ";
+        msg += "מתאים למתחילים";
+        msg_list.push(msg);
+    }
+
+    if (room.is_for_children) {
+        let bool = Boolean(room.is_for_children);
+        let msg = "";
+        if (!bool) msg += " לא ";
+        msg += "מתאים לילדים";
+        msg_list.push(msg);
+    }
+
+    if (room.is_scary) {
+        let bool = Boolean(room.is_scary);
+        let msg = "";
+        if (!bool) msg += " לא ";
+        msg += "מפחיד";
+        msg_list.push(msg);
+    }
+
+    if (room.is_actor) {
+        let bool = Boolean(room.is_actor);
+        let msg = "";
+        if (!bool) msg += " לא ";
+        msg += "עם שחקן";
+        msg_list.push(msg);
+    }
+
+    if (room.is_for_pregnant) {
+        let bool = Boolean(room.is_for_pregnant);
+        let msg = "";
+        if (!bool) msg += " לא ";
+        msg += "מתאים לנשים בהריון";
+        msg_list.push(msg);
+    }
+
+    if (room.is_for_disabled) {
+        let bool = Boolean(room.is_for_disabled);
+        let msg = "";
+        if (!bool) msg += " לא ";
+        msg += "מונגש לנכים";
+        msg_list.push(msg);
+    }
+
+    if (room.is_for_hearing_impaired) {
+        let bool = Boolean(room.is_for_hearing_impaired);
+        let msg = "";
+        if (!bool) msg += " לא ";
+        msg += "מונגש לכבדי שמיעה ";
+        msg_list.push(msg);
+    }
+
+    if (room.is_credit_card_accepted) {
+        let bool = Boolean(room.is_credit_card_accepted);
+        let msg = "";
+        if (!bool) msg += " לא ";
+        msg += "ניתן לשלם באשראי";
+        msg_list.push(msg);
+    }
+
+    return msg_list;
+}
+
 function handleMoreInfo(context, recipient, room_id) {
     return new Promise(
         function (resolve) {
@@ -743,50 +901,15 @@ function handleMoreInfo(context, recipient, room_id) {
                                 }
 
                                 msg_list.push(msg);
+                                msg_list.push(formatPriceInfo(context, room));
 
-                                if (typeof context.is_for_groups === 'undefined' && context.num_of_people > 1 && context.num_of_people < 10 && room['price_' + context.num_of_people] && room['weekend_price_' + context.num_of_people]) {
-                                    msg_list.push("לקבוצה של " + context.num_of_people + ": ");
-                                    msg_list.push("מחיר לשחקן באמצע שבוע: " + room['price_' + context.num_of_people] + " שקלים");
-                                    msg_list.push("מחיר לשחקן בסוף שבוע: " + room['weekend_price_' + context.num_of_people] + " שקלים")
-                                } else {
-                                    let weekday_avg = calculateAveragePrice(room, false);
-                                    let weekend_avg = calculateAveragePrice(room, true);
-                                    if (!isNaN(weekday_avg)) {
-                                        msg_list.push("מחיר ממוצע לשחקן באמצע שבוע: " + calculateAveragePrice(room, false) + " שקלים");
-                                    }
-
-                                    if (!isNaN(weekend_avg)) {
-                                        msg_list.push("מחיר ממוצע לשחקן בסוף שבוע: " + calculateAveragePrice(room, true) + " שקלים")
-                                    }
-                                }
-
-                                let merged_msg = "";
-                                for (let key in msg_list) {
-                                    merged_msg += msg_list[key] + "\n";
-                                }
-
+                                let merged_msg = merge_msg_list(msg_list);
 
                                 FB.newSimpleMessage(recipient, merged_msg).then(r => {
-                                    let msg_list = [];
                                     if(typeof room.escaper_id !== 'undefined'){
                                         Escaper.getAvailableSlotsForToday(room.escaper_id).then(slots => {
-                                            if(slots.length > 0) {
-                                                msg_list.push("שעות פנויות להיום: ");
-                                                msg_list.push("");
-                                                for (let i in slots) {
-                                                    msg_list.push("" + slots[i])
-                                                }
-                                                msg_list.push("");
-                                                msg_list.push("להזמנות: " + room.website)
-                                            } else{
-                                                msg_list.push("אין שעות פנויות להיום!");
-                                            }
-                                            msg_list.push("");
-                                            msg_list.push("המידע באדיבות www.escaper.co.il");
-                                            let merged_msg = "";
-                                            for (let key in msg_list) {
-                                                merged_msg += msg_list[key] + "\n";
-                                            }
+
+                                            let merged_msg = merge_msg_list(formatAvailableSlots(room, slots));
 
 
                                             FB.newSimpleMessage(recipient, merged_msg).then(r => {
@@ -823,6 +946,7 @@ function handleMoreInfo(context, recipient, room_id) {
         });
 }
 
+
 function handleMoreInfo2(context, recipient, room_id) {
     return new Promise(
         function (resolve) {
@@ -845,116 +969,15 @@ function handleMoreInfo2(context, recipient, room_id) {
 
 
                                 let msg_list = [];
-                                msg_list.push("טלפון: " + room.phone);
-                                if (room.soldier_discount || room.soldier_discount_weekend || room.student_discount || room.student_discount_weekend || room.children_discount || room.children_discount_weekend) {
-                                    msg_list.push("הנחות:");
-
-                                    let soldier_discount = undefined;
-                                    if (room.soldier_discount) {
-                                        soldier_discount = "לחיילים " + room.soldier_discount + "% באמצע שבוע";
-                                    }
-
-                                    if (room.soldier_discount_weekend) {
-                                        soldier_discount += ", ו " + room.soldier_discount_weekend + "% בסוף שבוע"
-                                    }
-                                    if (soldier_discount) {
-                                        msg_list.push(soldier_discount);
-                                    }
-
-                                    let student_discount = undefined;
-                                    if (room.student_discount) {
-                                        student_discount = "לסטודנטים " + room.student_discount + "% באמצע שבוע";
-                                    }
-
-                                    if (room.student_discount_weekend) {
-                                        student_discount += ", ו " + room.student_discount_weekend + "% בסוף שבוע"
-                                    }
-                                    if (student_discount) {
-                                        msg_list.push(student_discount);
-                                    }
-
-                                    let children_discount = undefined;
-                                    if (room.children_discount) {
-                                        children_discount = "לילדים " + room.children_discount + "% באמצע שבוע";
-                                    }
-
-                                    if (room.children_discount_weekend) {
-                                        children_discount += ", ו " + room.children_discount_weekend + "% בסוף שבוע"
-                                    }
-                                    if (children_discount) {
-                                        msg_list.push(children_discount);
-                                    }
-                                }
-
-                                if (room.is_beginner) {
-                                    let bool = Boolean(room.is_beginner);
-                                    let msg = "";
-                                    if (!bool) msg += " לא ";
-                                    msg += "מתאים למתחילים";
-                                    msg_list.push(msg);
-                                }
-
-                                if (room.is_for_children) {
-                                    let bool = Boolean(room.is_for_children);
-                                    let msg = "";
-                                    if (!bool) msg += " לא ";
-                                    msg += "מתאים לילדים";
-                                    msg_list.push(msg);
-                                }
-
-                                if (room.is_scary) {
-                                    let bool = Boolean(room.is_scary);
-                                    let msg = "";
-                                    if (!bool) msg += " לא ";
-                                    msg += "מפחיד";
-                                    msg_list.push(msg);
-                                }
-
-                                if (room.is_actor) {
-                                    let bool = Boolean(room.is_actor);
-                                    let msg = "";
-                                    if (!bool) msg += " לא ";
-                                    msg += "עם שחקן";
-                                    msg_list.push(msg);
-                                }
-
-                                if (room.is_for_pregnant) {
-                                    let bool = Boolean(room.is_for_pregnant);
-                                    let msg = "";
-                                    if (!bool) msg += " לא ";
-                                    msg += "מתאים לנשים בהריון";
-                                    msg_list.push(msg);
-                                }
-
-                                if (room.is_for_disabled) {
-                                    let bool = Boolean(room.is_for_disabled);
-                                    let msg = "";
-                                    if (!bool) msg += " לא ";
-                                    msg += "מונגש לנכים";
-                                    msg_list.push(msg);
-                                }
-
-                                if (room.is_for_hearing_impaired) {
-                                    let bool = Boolean(room.is_for_hearing_impaired);
-                                    let msg = "";
-                                    if (!bool) msg += " לא ";
-                                    msg += "מונגש לכבדי שמיעה ";
-                                    msg_list.push(msg);
-                                }
-
-                                if (room.is_credit_card_accepted) {
-                                    let bool = Boolean(room.is_credit_card_accepted);
-                                    let msg = "";
-                                    if (!bool) msg += " לא ";
-                                    msg += "ניתן לשלם באשראי";
-                                    msg_list.push(msg);
-                                }
-                                let merged_msg = "";
-                                for (let key in msg_list) {
-                                    merged_msg += msg_list[key] + "\n";
-                                }
-                                FB.newSimpleMessage(recipient, merged_msg).then( r => {
-                                    resolve(context);
+                                let buttons = [];
+                                buttons.push(Formatter.createPhoneButton(room.phone));
+                                buttons.push(Formatter.createPhoneButton(room.phone_2));
+                                FB.newButtonsMessage(recipient, "מספרי טלפון:", buttons).then(r => {
+                                    msg_list.push(formatDiscounts(room, msg_list));
+                                    let merged_msg = merge_msg_list(formatRoomFilters(room));
+                                    FB.newSimpleMessage(recipient, merged_msg).then( r => {
+                                        resolve(context);
+                                    });
                                 });
                         });
 
@@ -1052,6 +1075,7 @@ function resetSession(context, recipient) {
     delete context.num_of_people;
     delete context.room_list;
     delete context.room_id;
+    delete context.room_info;
     delete context.company_name;
     delete context.lat;
     delete context.lon;
@@ -1075,6 +1099,61 @@ function resetSession(context, recipient) {
     })
 }
 
+
+function handleRoomInfo(recipient,context) {
+    return new Promise(
+        function (resolve) {
+            let room_id = context.room_id;
+            let room_info = context.room_info;
+
+            DB.findRoomById(room_id).then (room => {
+
+                let msg_list = [];
+
+                msg_list.push("שם החדר: " + room.room_name[0]);
+
+                let merged_msg = merge_msg_list(msg_list);
+                FB.newSimpleMessage(recipient, merged_msg).then( r => {
+                    for (let i in room_info) {
+                        if (room_info[i] === "כתובת") {
+                            let elements = [];
+                            let mapItem = Formatter.createMapItem(room.address);
+                            elements.push(mapItem);
+                            FB.newStructuredMessage(recipient, elements)
+                        }
+                        if (room_info[i] === "טלפון") {
+                            let buttons = [];
+                            buttons.push(Formatter.createPhoneButton(room.phone));
+                            buttons.push(Formatter.createPhoneButton(room.phone_2));
+                            FB.newButtonsMessage(recipient, "טלפונים:", buttons)
+                        }
+                        if (room_info[i] === "הנחה") {
+                            let msg_list = [];
+                            msg_list.push(formatDiscounts(room));
+                            let merged_msg = merge_msg_list(msg_list);
+                            FB.newSimpleMessage(recipient, merged_msg)
+                        }
+                        if (room_info[i] === "ביקורת") {
+                            let elements = [];
+                            let hashtagItem = Formatter.createHashtagItem(room.hashtag);
+                            elements.push(hashtagItem);
+                            FB.newStructuredMessage(recipient, elements)
+                        }
+                        if (room_info[i] === "מחיר") {
+                            let msg_list = [];
+                            msg_list.push(formatPriceInfo(context,room));
+                            let merged_msg = merge_msg_list(msg_list);
+                            FB.newSimpleMessage(recipient, merged_msg).then(r => r)
+                        }
+                    }
+                    delete context.room_info;
+                    resolve(context)
+                });
+            })
+        });
+
+
+        }
 
 let actions = {
     send(request, response) {
@@ -1144,27 +1223,39 @@ let actions = {
                 context = enrichFlags(context,categories)
             }
 
+            if(room_info.length > 0) {
+                context.room_info = room_info
+            }
             sessions[sessionId].context = context;
-            // updateSession(sessionId,context);
-            findEscapeRoomByContext(context).then(context => {
-                if (context && context.room_list && context.room_list.length > 0) {
-                    return resolve(context)
+            let recipient = sessions[sessionId].fbid;
+            if (context.room_info) {
+                if (context.room_id) {
+                    handleRoomInfo(recipient,context)
                 } else {
-                    if(context.location && context.location.length > 0){
-                        convertLocationToGeo(context.location[0]).then(coords => {
-                            if(coords && coords.lat && coords.lng){
-                                // delete context.location;
-                                context.lat = coords.lat;
-                                context.lon = coords.lng;
-                                sessions[sessionId].context = context;
-                            }
-                            resolve(findEscapeRoomByContext(context))
-                        })
-
-                    }
+                    FB.newSimpleMessage(recipient,"ספר לי על איזה חדר אתה רוצה לקבל מידע על " + context.room_info.toString())
                 }
+            } else {
+                findEscapeRoomByContext(context).then(context => {
+                    if (context && context.room_list && context.room_list.length > 0) {
+                        return resolve(context)
+                    } else {
+                        if(context.location && context.location.length > 0){
+                            convertLocationToGeo(context.location[0]).then(coords => {
+                                if(coords && coords.lat && coords.lng){
+                                    // delete context.location;
+                                    context.lat = coords.lat;
+                                    context.lon = coords.lng;
+                                    sessions[sessionId].context = context;
+                                }
+                                resolve(findEscapeRoomByContext(context))
+                            })
+
+                        }
+                    }
 
                 });
+            }
+
 
 
         });
@@ -1307,7 +1398,7 @@ function getValues(entities, entity) {
 
         for (let i = 0; i < entities[entity].length; i++) {
 
-            if (entities[entity][i].confidence && entities[entity][i].confidence > 0.7) {
+            if (entities[entity][i].confidence && entities[entity][i].confidence > 0.6) {
                 let val = entities[entity][i].value;
                 let fval = typeof val === 'object' ? val.value : val;
 

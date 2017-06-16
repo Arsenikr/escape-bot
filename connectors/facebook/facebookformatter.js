@@ -90,7 +90,7 @@ function createMenuItem(title, payload, image_url) {
 
 function createMapItem(address) {
     return {
-        title: "מפה:",
+        title: address,
         image_url: "https:\/\/maps.googleapis.com\/maps\/api\/staticmap?size=764x400&center=" + encodeURI(address) + "&zoom=16&language=he&markers=size:mid%7Ccolor:0xff0000%7Clabel:1%7C" + encodeURI(address),
         item_url: "https:\/\/www.google.com\/maps\/place\/" + address
     }
@@ -128,6 +128,15 @@ function createMoovitItem(url) {
         item_url: url
     }
 }
+
+function createPhoneButton(phone) {
+    return {
+        "type":"phone_number",
+        "title":phone,
+        "payload": "+972" + phone.substring(1)
+    }
+}
+
 
 function createMenu(data, images) {
     let list = [];
@@ -351,5 +360,6 @@ module.exports = {
     createCompanyQR:createCompanyQR,
     createFiltersQR:createFiltersQR,
     createGroupSizeQR:createGroupSizeQR,
-    createLocationQR:createLocationQR
+    createLocationQR:createLocationQR,
+    createPhoneButton:createPhoneButton
 };
