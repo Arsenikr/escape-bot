@@ -457,7 +457,7 @@ function extractResponseFromContext(context) {
         if(context.availability === "פנוי היום" || context.availability === "פנוי הערב" || context.availability.includes("היום") || context.availability.includes("הערב")){
             msg += " להיום";
 
-        } else if(context.availability === "פנוי מחר" || context.availability.includes("מחר")){
+        } else if(context.availability && context.availability === "פנוי מחר" || context.availability.includes("מחר")){
             msg += " למחר";
         }
 
@@ -478,7 +478,7 @@ function extractResponseFromContext(context) {
                 }
             }  else {
                 let formatted_day = day.calendar();
-                if(!formatted_day.includes("היום") && !formatted_day.includes("מחר")){
+                if(formatted_day && !formatted_day.includes("היום") && !formatted_day.includes("מחר")){
                     msg += " ב";
                 } else {
                     msg += " "
