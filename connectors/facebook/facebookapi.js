@@ -153,6 +153,44 @@ function newStructuredMessage(recipientId, elements) {
         });
 }
 
+
+function newButtonsMessage(recipientId,text, buttons) {
+
+    return new Promise(
+        function (resolve, reject) {
+
+            let opts = {
+                form: {
+                    recipient: {
+                        id: recipientId
+                    }
+                }
+            };
+
+            if (buttons && buttons.length > 0) {
+                let message = {
+                    attachment: {
+                        type: 'template',
+                        payload: {
+                            template_type: 'button',
+                            text: text,
+                            buttons: buttons
+                        }
+                    }
+                };
+                opts.form.message = message;
+
+                newRequest(opts, function (err, resp, data) {
+                    if (err || data.error) {
+                        reject(err || data.error && data.error.message)
+                    } else {
+                        resolve(data)
+                    }
+                });
+            }
+        });
+}
+
 function newVideoMessage(recipientId, url) {
 
     return new Promise(
@@ -234,6 +272,7 @@ module.exports = {
     newRequest: newRequest,
     newSimpleMessage: newSimpleMessage,
     newStructuredMessage: newStructuredMessage,
+    newButtonsMessage: newButtonsMessage,
     newListMessage: newListMessage,
     newVideoMessage: newVideoMessage,
     newSenderAction: newSenderAction,
