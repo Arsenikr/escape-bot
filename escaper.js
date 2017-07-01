@@ -95,7 +95,10 @@ function filterSlots(slots, hour,grain) {
 
 
 function getTodayDate() {
-    return formatDate(moment());
+    let now = moment("2017-07-02 08:30:26");
+    // in escaper, if the hour is before 4 am, you need to call the API with yesterday's data
+    if(now.hour() <=4) now = now.subtract(1,'days');
+    return formatDate(now);
 }
 
 function formatDate(date) {
