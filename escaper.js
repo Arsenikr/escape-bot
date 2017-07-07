@@ -16,7 +16,11 @@ function getAvailableSlotsForToday(escaper_id) {
 
                     return res.json();
                 }).then(function (json) {
-                resolve(json[escaper_id].slots)
+                    if(json[escaper_id]){
+                        resolve(json[escaper_id].slots)
+                    } else {
+                        resolve([])
+                    }
             });
         });
 }
@@ -58,7 +62,7 @@ function getAvailableSlots(rooms,availability,datetime) {
                     let available_rooms = [];
                     console.log(hour);
                     for(let i in rooms){
-                        if(typeof rooms[i].escaper_id !== 'undefined' && json[rooms[i].escaper_id].slots.length > 0 ){
+                        if(typeof rooms[i].escaper_id !== 'undefined' && json[rooms[i].escaper_id] && json[rooms[i].escaper_id].slots.length > 0 ){
                             let filtered_slots = filterSlots(json[rooms[i].escaper_id].slots,hour,grain);
                             if(filtered_slots.length > 0){
                                 rooms[i].first_slot = filtered_slots[0];
@@ -95,7 +99,7 @@ function filterSlots(slots, hour,grain) {
 
 
 function getTodayDate() {
-    let now = moment("2017-07-02 08:30:26");
+    let now = moment();
     // in escaper, if the hour is before 4 am, you need to call the API with yesterday's data
     if(now.hour() <=4) now = now.subtract(1,'days');
     return formatDate(now);
