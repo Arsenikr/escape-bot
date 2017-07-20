@@ -16,6 +16,8 @@ if (!FB_PAGE_TOKEN) {
 
 let FB_VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN || 'my_voice_is_my_password_verify_me';
 
+let DASHBOT_TOKEN = process.env.DASHBOT_TOKEN || 'kp9lXvq86mFjtFIln6QqUWFZNzAhaC399ctQXnAV';
+
 let MONGODB_URL = process.env.PROD_MONGODB || 'mongodb://escape-bot:escape-bot@ds131109.mlab.com:31109/escape-bot';
 
 //mongodb://escape-bot:escape-bot@ds131109.mlab.com:31109/escape-bot
@@ -64,5 +66,6 @@ module.exports = {
     TYPING_ON: TYPING_ON,
     TYPING_OFF: TYPING_OFF,
     ESCAPER_KEY: ESCAPER_KEY,
-    RR_FILTERED_ROOMS: RR_FILTERED_ROOMS
+    RR_FILTERED_ROOMS: RR_FILTERED_ROOMS,
+    DASHBOT_TOKEN: DASHBOT_TOKEN
 };
