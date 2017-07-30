@@ -2,6 +2,7 @@
 
 const request = require('request');
 const Config = require('../../config');
+const dashbot = require('dashbot')(Config.DASHBOT_TOKEN).facebook;
 
 // SETUP A REQUEST TO FACEBOOK SERVER
 const newRequest = request.defaults({
@@ -54,6 +55,8 @@ function newSimpleMessage(recipientId, msg,quick_replies) {
             }
 
             newRequest(opts, function (err, resp, data) {
+                dashbot.logOutgoing(newRequest, resp.body);
+
                 if (err) {
                     reject(err || data.error && data.error.message)
                 } else {
@@ -102,6 +105,7 @@ function newSimpleMessage(recipientId, msg,quick_replies) {
                     opts.form.message = message;
 
                     newRequest(opts, function (err, resp, data) {
+                        dashbot.logOutgoing(newRequest, resp.body);
                         if (err) {
                             reject(err || data.error && data.error.message)
                         } else {
@@ -140,6 +144,7 @@ function newStructuredMessage(recipientId, elements) {
                 opts.form.message = message;
 
                 newRequest(opts, function (err, resp, data) {
+                    dashbot.logOutgoing(newRequest, resp.body);
                     if (err || data.error) {
                         reject(err || data.error && data.error.message)
                     } else {
@@ -181,6 +186,7 @@ function newButtonsMessage(recipientId,text, buttons) {
                 opts.form.message = message;
 
                 newRequest(opts, function (err, resp, data) {
+                    dashbot.logOutgoing(newRequest, resp.body);
                     if (err || data.error) {
                         reject(err || data.error && data.error.message)
                     } else {
@@ -215,6 +221,7 @@ function newVideoMessage(recipientId, url) {
                 opts.form.message = message;
 
                 newRequest(opts, function (err, resp, data) {
+                    dashbot.logOutgoing(newRequest, resp.body);
                     if (err) {
                         reject(err || data.error && data.error.message)
                     } else {
@@ -242,6 +249,7 @@ function newSenderAction(recipientId, action) {
             opts.form.sender_action = action;
 
             newRequest(opts, function (err, resp, data) {
+                dashbot.logOutgoing(newRequest, resp.body);
                 if (err) {
                     reject(err || data.error && data.error.message)
                 } else {

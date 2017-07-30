@@ -5,13 +5,15 @@
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
-  },"engines":         {
-  "node": "6.11.1"
-},
+  },
+  "engines": {
+    "node": "6.11.1"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.16.0",
+    "dashbot": "^9.2.0",
     "express": "^4.14.0",
     "geopoint": "^1.0.1",
     "moment": "^2.18.1",
@@ -22,7 +24,6 @@
     "node-wit": "^4.2.0",
     "request": "^2.79.0",
     "shuffle-array": "^1.0.1",
-    "tgfancy": "^0.10.0",
     "tinyurl": "^1.1.2",
     "utf8": "^2.1.2"
   },

@@ -8,6 +8,8 @@ const Config = require('./config');
 const FB = require('./connectors/facebook/facebookapi');
 const Bot = require('./botlogic/bot');
 const emoji = require('node-emoji');
+const dashbot = require('dashbot')(Config.DASHBOT_TOKEN).facebook;
+
 
 app.set('port', (process.env.PORT || 5000));
 
@@ -44,6 +46,7 @@ function handleError(res, reason, message, code) {
     res.status(code || 500).json({"error": message});
 }
 app.post('/webhook', function (req, res) {
+    dashbot.logIncoming(req.body);
     let entry = FB.getMessageEntry(req.body);
     res.sendStatus(200);
     if(entry && entry.sender){
