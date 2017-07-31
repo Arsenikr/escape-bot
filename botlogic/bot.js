@@ -291,7 +291,7 @@ function handleFreeMsgFlow(recipient, sessionId, entry, context) {
                                     context.room_list = reply;
                                     displayResponse(recipient, context);
                                 } else {
-                                    read(sessionId, context, recipient, context.message)
+                                    handleMessage(sessionId,context.message, context )
                                 }
                             });
                         }
@@ -1162,28 +1162,9 @@ function handleRoomInfo(recipient,context) {
 
         }
 
-let actions = {
-    send(request, response) {
-        const {sessionId, context, entities} = request;
-        const {text, quickreplies} = response;
-        return new Promise(function (resolve, reject) {
-            const recipientId = sessions[sessionId].fbid;
-
-            if (context.room_list && context.room_list.length > 0) {
-                displayResponse(recipientId, context)
-            } else {
-                return reject();
-            }
-            sessions[sessionId].context = context;
-            // DO NOT RETURN CONTEXT
-            return resolve();
-        });
-
-    },
-
-
-    findEscapeRoom({sessionId,context, entities}) {
-        return new Promise(function (resolve, reject) {
+function handleMessage(sessionId,question,context) {
+    return new Promise(function (resolve, reject) {
+        wit.message(question, context).then(({entities}) => {
             console.log(entities);
             let location = getValues(entities, 'room_location');
             let num_of_people = getValues(entities, 'group_size');
@@ -1213,61 +1194,83 @@ let actions = {
                 context.datetime = datetime[0]
             }
 
-            if(availability && availability.length > 0) {
+            if (availability && availability.length > 0) {
                 context.availability = availability
             }
 
 
-            if(room_name.length > 0) {
+            if (room_name.length > 0) {
                 context.room_name = room_name
             }
 
-            if(company.length > 0) {
+            if (company.length > 0) {
                 context.company_name = company
             }
 
-            if(categories.length > 0){
-                context = enrichFlags(context,categories)
+            if (categories.length > 0) {
+                context = enrichFlags(context, categories)
             }
 
-            if(room_info.length > 0) {
+            if (room_info.length > 0) {
                 context.room_info = room_info
             }
             sessions[sessionId].context = context;
             let recipient = sessions[sessionId].fbid;
             if (context.room_info) {
                 if (context.room_id) {
-                    handleRoomInfo(recipient,context)
+                    handleRoomInfo(recipient, context)
                 } else {
-                    FB.newSimpleMessage(recipient,"ספר לי על איזה חדר אתה רוצה לקבל מידע על " + context.room_info.toString())
+                    FB.newSimpleMessage(recipient, "ספר לי על איזה חדר אתה רוצה לקבל מידע על " + context.room_info.toString())
                 }
             } else {
                 findEscapeRoomByContext(context).then(context => {
                     if (context && context.room_list && context.room_list.length > 0) {
-                        return resolve(context)
+                        if (context.room_list && context.room_list.length > 0) {
+                            displayResponse(recipient, context)
+                        } else {
+                            return reject();
+                        }
                     } else {
-                        if(context.location && context.location.length > 0){
+                        if (context.location && context.location.length > 0) {
                             convertLocationToGeo(context.location[0]).then(coords => {
-                                if(coords && coords.lat && coords.lng){
+                                if (coords && coords.lat && coords.lng) {
                                     // delete context.location;
                                     context.lat = coords.lat;
                                     context.lon = coords.lng;
                                     sessions[sessionId].context = context;
                                 }
-                                resolve(findEscapeRoomByContext(context))
+                                findEscapeRoomByContext(context).then(context => {
+                                    if (context && context.room_list && context.room_list.length > 0) {
+                                        if (context.room_list && context.room_list.length > 0) {
+                                            displayResponse(recipient, context)
+                                        } else {
+                                            return reject();
+                                        }
+                                    }
+                                })
                             })
-
                         }
                     }
-
-                });
+                }).catch((err) => {
+                    if (err) {
+                        console.error('Oops! Got an error from Wit: ', err.stack || err);
+                    }
+                    setTimeout(function () {
+                        FB.newSenderAction(sender, Config.TYPING_OFF).then(_ => {
+                            let new_context = sessions[sessionId].context;
+                            displayErrorMessage(sender, new_context).then(ans => {
+                                // createGeneralMenu(new_context).then(menu => {
+                                //     FB.newStructuredMessage(sender, menu);
+                                // })
+                            })
+                        }, 3000);
+                    })
+                })
             }
+        })
+    })
+}
 
-
-
-        });
-    }
-};
 
 function enrichFlags(context, categories) {
 
@@ -1352,50 +1355,8 @@ function enrichFlags(context, categories) {
 const WIT_TOKEN = Config.WIT_TOKEN;
 
 const wit = new Wit({
-    accessToken: WIT_TOKEN,
-    actions
+    accessToken: WIT_TOKEN
 });
-
-
-function read(sessionId,context,sender, message) {
-    return new Promise(
-        function (resolve, reject) {
-
-            // Let's find the user
-
-            // Let's forward the message to the Wit.ai bot engine
-            // This will run all actions until there are no more actions left to do
-            wit.runActions(
-                sessionId, // the user's current session
-                message, // the user's message
-                context // the user's current session state
-            ).then((context) => {
-                // delete context.location;
-                // delete context.room_list;
-                // Our bot did everything it has to do.
-                // Now it's waiting for further messages to proceed.
-                console.log('Waiting for next user messages');
-
-                // Updating the user's current session state
-                // sessions[sessionId].context = context;
-                return resolve()
-            }).catch((err) => {
-                if (err) {
-                    console.error('Oops! Got an error from Wit: ', err.stack || err);
-                }
-                setTimeout(function () {
-                    FB.newSenderAction(sender, Config.TYPING_OFF).then(_ => {
-                        let new_context = sessions[sessionId].context;
-                        displayErrorMessage(sender,new_context).then(ans => {
-                            // createGeneralMenu(new_context).then(menu => {
-                            //     FB.newStructuredMessage(sender, menu);
-                            // })
-                        })
-                    }, 3000);
-                })
-            })
-        });
-}
 
 function getValues(entities, entity) {
     let values = [];
@@ -1405,7 +1366,7 @@ function getValues(entities, entity) {
 
         for (let i = 0; i < entities[entity].length; i++) {
 
-            if (entities[entity][i].confidence && entities[entity][i].confidence > 0.6) {
+            if (entities[entity][i].confidence && entities[entity][i].confidence > 0.5) {
                 let val = entities[entity][i].value;
                 let fval = typeof val === 'object' ? val.value : val;
 
@@ -1513,6 +1474,7 @@ module.exports = {
     generateWazeLink: generateWazeLink,
     generateMoovitLink: generateMoovitLink,
     displayErrorMessage: displayErrorMessage,
-    mainFlow:mainFlow
+    mainFlow:mainFlow,
+    handleMessage: handleMessage
 };
 
