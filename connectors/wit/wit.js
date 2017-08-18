@@ -3,7 +3,6 @@ const Config = require('../../config');
 const Escaper = require('../../escaper');
 const moment = require('moment');
 const WIT_TOKEN = Config.WIT_TOKEN;
-const murmur = require('murmur');
 
 const wit = new Wit({
     accessToken: WIT_TOKEN
