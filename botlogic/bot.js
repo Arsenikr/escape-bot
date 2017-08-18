@@ -1184,13 +1184,13 @@ function handleMsgFlow(sessionId, context) {
 
             sessions[sessionId].context = context;
             let recipient = sessions[sessionId].fbid;
-            if (context.room_info) {
-                if (context.room_id) {
-                    handleRoomInfo(recipient, context)
-                } else {
-                    FB.newSimpleMessage(recipient, "ספר לי על איזה חדר אתה רוצה לקבל מידע על " + context.room_info.toString())
-                }
-            } else {
+            // if (context.room_info) {
+            //     if (context.room_id) {
+            //         handleRoomInfo(recipient, context)
+            //     } else {
+            //         FB.newSimpleMessage(recipient, "ספר לי על איזה חדר אתה רוצה לקבל מידע על " + context.room_info.toString())
+            //     }
+            // } else {
                 handleSmallTalk(context).then(resp => {
                     if(resp) {
                         FB.newSimpleMessage(recipient, resp).then( rrr => {
@@ -1201,7 +1201,7 @@ function handleMsgFlow(sessionId, context) {
                         findRoomsByContext(context, recipient, reject, sessionId,false);
                     }
                 })
-            }
+            // }
         })
 
 
