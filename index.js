@@ -61,6 +61,8 @@ app.post('/webhook', function (req, res) {
         let msg = undefined;
         if(entry.message) msg = entry.message.text;
 
+        let wit_entities = undefined;
+        if(entry.message && entry.message.nlp && entry.message.nlp.entities) wit_entities = entry.message.nlp.entities;
 
         let attachments = [];
         if(entry.message && entry.message.attachments)
@@ -70,6 +72,7 @@ app.post('/webhook', function (req, res) {
 
         let inputobj = {
             msg: msg,
+            wit_entities: wit_entities,
             attachments: attachments,
             postback: postback,
             qr: qr

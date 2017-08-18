@@ -6,8 +6,8 @@ const DB = require('../model/mongoose');
 const TinyURL = require('tinyurl');
 const Escaper = require('../escaper');
 const moment = require('moment');
-const Wit = require('node-wit').Wit;
 const FB = require('../connectors/facebook/facebookapi');
+const Wit = require('../connectors/wit/wit');
 const Formatter = require('../connectors/facebook/facebookformatter');
 const fetch = require('node-fetch');
 const utf8 = require('utf8');
@@ -270,41 +270,11 @@ function handleAttachments(recipient, entry, context) {
 }
 function handleFreeMsgFlow(recipient, sessionId, entry, context) {
     let message = entry.msg;
-    easterEggs(message).then(function (reply) {
-            FB.newSimpleMessage(recipient, reply).then(reply => {
-                if (!isNaN(message)) {
-                    context.num_of_people = [Number(message)];
-                    findEscapeRoomByContext(context).then(function (new_context) {
-                        if (new_context && new_context.room_list && new_context.room_list.length > 0) {
-                            displayResponse(recipient, new_context);
-                        }
-                    });
-                }
-                else {
-                    findRoomByName(context,context.message).then(function (reply) {
-                        if (reply && reply.length > 0) {
-                            FB.newStructuredMessage(recipient, reply)
-                        } else {
-                            findRoomsByCompany(context, context.message).then(function (reply) {
-                                if (reply && reply.length > 0) {
-                                    context.company_name = message;
-                                    context.room_list = reply;
-                                    displayResponse(recipient, context);
-                                } else {
-                                    handleMessage(sessionId,context.message, context )
-                                }
-                            });
-                        }
-                    });
-                }
+    let entities = entry.wit_entities;
 
-        })
-    }).catch(err => {
-        console.log(err);
-        FB.newSimpleMessage(entry.sender.id, 'לא הצלחתי לענות על זה, אבל הנה דברים שאני כן יכול לענות עליהם!').then(ans => {
-            Formatter.drawMenu(context, entry);
-        });
-    });
+    Wit.extractEntities(entities, context).then(context =>
+        handleMsgFlow(sessionId, context)
+    )
 }
 function mainFlow(source,recipient,entry) {
     FB.newSenderAction(recipient, Config.MARK_SEEN).then(_ => {
@@ -442,11 +412,6 @@ function findEscapeRoomByContext(context) {
             });
         })
 }
-
-
-
-
-
 
 function extractResponseFromContext(context) {
     let msg = "";
@@ -629,20 +594,10 @@ function displayResponse(recipient, context) {
             FB.newSimpleMessage(recipient, msg).then(r => {
                     if(context.room_list && context.room_list.length == 1){
                         FB.newStructuredMessage(recipient, context.room_list).then(r => {
-                            // setTimeout(function() {FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש או להתחיל חיפוש חדש:").then(r => {
-                            //     createGeneralMenu(recipient).then(menu => {
-                            //         FB.newStructuredMessage(recipient, menu);
-                            //     })
-                            // }) }, 3000);
                         })
                     } else {
 
                         FB.newListMessage(recipient, context.room_list,0).then(r => {
-                            // setTimeout(function() {FB.newSimpleMessage(recipient, "בחר האם לצמצם את החיפוש או להתחיל חיפוש חדש:").then(r => {
-                            //     createGeneralMenu(recipient).then(menu => {
-                            //         FB.newStructuredMessage(recipient, menu);
-                            //     })
-                            // }) }, 3000);
                         })
                     }
                 })
@@ -1162,58 +1117,12 @@ function handleRoomInfo(recipient,context) {
 
         }
 
-function handleMessage(sessionId,question,context) {
-    return new Promise(function (resolve, reject) {
-        wit.message(question, context).then(({entities}) => {
-            console.log(entities);
-            let location = getValues(entities, 'room_location');
-            let num_of_people = getValues(entities, 'group_size');
-            let room_name = getValues(entities, 'room_name');
-            let company = getValues(entities, 'room_company');
-            let categories = getValues(entities, 'room_category');
-            let availability = getValues(entities, 'room_availability');
-            let datetime = getDatetime(entities);
-            let room_info = getValues(entities, 'room_info');
-            let price = getValues(entities, 'amount_of_money');
-
-            console.log("wit received: " + location);
-            console.log("wit received: " + num_of_people);
-
-            if (location.length > 0) {
-                delete context.lat;
-                delete context.lon;
-                context.location = location;
-
-            }
-            if (num_of_people.length > 0) {
-                context.num_of_people = num_of_people;
-            }
-
-            if (datetime && datetime.length > 0) {
-                context.availability = "פנוי";
-                context.datetime = datetime[0]
-            }
-
-            if (availability && availability.length > 0) {
-                context.availability = availability
-            }
 
 
-            if (room_name.length > 0) {
-                context.room_name = room_name
-            }
+function handleMsgFlow(sessionId, context) {
+    return new Promise(
+        function (resolve, reject) {
 
-            if (company.length > 0) {
-                context.company_name = company
-            }
-
-            if (categories.length > 0) {
-                context = enrichFlags(context, categories)
-            }
-
-            if (room_info.length > 0) {
-                context.room_info = room_info
-            }
             sessions[sessionId].context = context;
             let recipient = sessions[sessionId].fbid;
             if (context.room_info) {
@@ -1224,33 +1133,37 @@ function handleMessage(sessionId,question,context) {
                 }
             } else {
                 findEscapeRoomByContext(context).then(context => {
-                    if (context && context.room_list && context.room_list.length > 0) {
+                    // if (context && ((context.is_changed && context.is_changed === true) || (!context.hasOwnProperty('is_changed') ) )) {
                         if (context.room_list && context.room_list.length > 0) {
-                            displayResponse(recipient, context)
+                            if (context.room_list && context.room_list.length > 0) {
+                                displayResponse(recipient, context)
+                            } else {
+                                return reject();
+                            }
                         } else {
-                            return reject();
-                        }
-                    } else {
-                        if (context.location && context.location.length > 0) {
-                            convertLocationToGeo(context.location[0]).then(coords => {
-                                if (coords && coords.lat && coords.lng) {
-                                    // delete context.location;
-                                    context.lat = coords.lat;
-                                    context.lon = coords.lng;
-                                    sessions[sessionId].context = context;
-                                }
-                                findEscapeRoomByContext(context).then(context => {
-                                    if (context && context.room_list && context.room_list.length > 0) {
-                                        if (context.room_list && context.room_list.length > 0) {
-                                            displayResponse(recipient, context)
-                                        } else {
-                                            return reject();
-                                        }
+                            if (context.location && context.location.length > 0) {
+                                convertLocationToGeo(context.location[0]).then(coords => {
+                                    if (coords && coords.lat && coords.lng) {
+                                        // delete context.location;
+                                        context.lat = coords.lat;
+                                        context.lon = coords.lng;
+                                        sessions[sessionId].context = context;
                                     }
+                                    findEscapeRoomByContext(context).then(context => {
+                                        if (context && context.room_list && context.room_list.length > 0) {
+                                            if (context.room_list && context.room_list.length > 0) {
+                                                displayResponse(recipient, context)
+                                            } else {
+                                                return reject();
+                                            }
+                                        }
+                                    })
                                 })
-                            })
+                            }
                         }
-                    }
+                    // } else {
+                    //     FB.newSimpleMessage(recipient,"לא הבנתי את כוונתך בוטן יקר...")
+                    // }
                 }).catch((err) => {
                     if (err) {
                         console.error('Oops! Got an error from Wit: ', err.stack || err);
@@ -1268,153 +1181,13 @@ function handleMessage(sessionId,question,context) {
                 })
             }
         })
+}
+
+function handleMessage(sessionId,question,context) {
+    Wit.getResponseFromWit(question, context).then(entities => {
+            context = Wit.extractEntities(entities, context);
+            handleMsgFlow(sessionId, context)
     })
-}
-
-
-function enrichFlags(context, categories) {
-
-    for (let i = 0; i < categories.length; i++) {
-
-        if (categories[i].trim() === "הריון") {
-            console.log("הריון");
-            context.is_for_pregnant = true;
-        }
-
-        if (categories[i].trim() === "נגיש לנגים") {
-            console.log("נכים");
-            context.is_for_disabled = true;
-        }
-
-        if (categories[i].trim() === "מותאם לכבדי שמיעה") {
-            console.log("שמיעה");
-            context.is_for_hearing_impaired = true;
-        }
-
-        if (categories[i].trim() === "לילדים") {
-            console.log("ילדים");
-            context.is_for_children = true;
-        }
-
-        if (categories[i].trim() === "מבוגרים") {
-            console.log("מבוגרים");
-            context.is_for_children = false;
-        }
-
-        if (categories[i].trim() === "אשראי") {
-            console.log("אשראי");
-            context.is_credit_card_accepted = true;
-        }
-
-        if (categories[i].trim() === "לא מפחיד") {
-            console.log("לא מפחיד");
-            context.is_scary = false;
-
-        } else if (categories[i].trim() === "מפחיד") {
-            console.log("מפחיד");
-            context.is_scary = true;
-        }
-
-        if (categories[i].trim() === "מתחילים") {
-            console.log("מתחילים");
-            context.is_beginner = true;
-        }
-        if (categories[i].trim() === "מנוסים") {
-            console.log("מנוסים");
-            context.is_beginner = false;
-        }
-
-        if (categories[i].trim() === "ליניארי") {
-            console.log("ליניארי");
-            context.is_linear = true;
-        }
-
-        if (categories[i].trim() === "מקבילי") {
-            console.log("מקבילי");
-            context.is_parallel = true;
-        }
-
-        if (categories[i].trim() === "קבוצה גדולה") {
-            console.log("קבוצות גדולות");
-            context.is_for_groups = true;
-        }
-
-        if (categories[i].trim() === "כפול") {
-            console.log("כפול");
-            context.is_double = true;
-        }
-
-        if (categories[i].trim() === "שחקן") {
-            console.log("שחקן");
-            context.is_actor = true;
-        }
-    }
-    return context
-}
-
-const WIT_TOKEN = Config.WIT_TOKEN;
-
-const wit = new Wit({
-    accessToken: WIT_TOKEN
-});
-
-function getValues(entities, entity) {
-    let values = [];
-    if(entities && entities[entity] &&
-        Array.isArray(entities[entity]) &&
-        entities[entity].length > 0) {
-
-        for (let i = 0; i < entities[entity].length; i++) {
-
-            if (entities[entity][i].confidence && entities[entity][i].confidence > 0.5) {
-                let val = entities[entity][i].value;
-                let fval = typeof val === 'object' ? val.value : val;
-
-                values.push(fval)
-            }
-        }
-    }
-    return values;
-}
-
-
-function getDatetime(entities) {
-    let values = [];
-    if (entities && entities['datetime'] &&
-        Array.isArray(entities['datetime']) &&
-        entities['datetime'].length > 0) {
-
-        for (let i = 0; i < entities['datetime'].length; i++) {
-
-            if (entities['datetime'][i].confidence && entities['datetime'][i].confidence > 0.7) {
-                if (entities['datetime'][i].from &&  entities['datetime'][i].to) {
-                    let from_date = convertWeeHoursToToday(entities['datetime'][i].from.value,entities['datetime'][i].from.grain);
-                    let to_date = convertWeeHoursToToday(entities['datetime'][i].to.value,entities['datetime'][i].to.grain);
-                    values.push({"from":from_date, "to": to_date,"grain":entities['datetime'][i].from.grain })
-                } else {
-                    let from_date = convertWeeHoursToToday(entities['datetime'][i].value,entities['datetime'][i].grain);
-                    values.push({"from": from_date,"grain":entities['datetime'][i].grain})
-                }
-            }
-        }
-        return values;
-    }
-}
-
-function convertWeeHoursToToday(date,grain) {
-    let date_moment = moment(date);
-    let formatted_date = Escaper.formatDate(date_moment);
-    let tomorrow_date = Escaper.formatDate(moment().add(1,'days'));
-
-    if(grain === 'hour'){
-        if(formatted_date === tomorrow_date && date_moment.get("hour") >= 0 && date_moment.get("hour") <= 6 ) {
-           return date_moment.subtract(1,'days').format()
-        } else {
-            return date
-        }
-    } else {
-        return date
-    }
 }
 
 
