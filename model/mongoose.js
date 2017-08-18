@@ -7,7 +7,10 @@ const shuffle = require('shuffle-array');
 
 mongoose.Promise = global.Promise;
 
-mongoose.connect(Config.MONGODB_URL, function (error) {
+mongoose.connect(Config.MONGODB_URL, {
+    useMongoClient: true,
+    keepAlive: 120
+}, function (error) {
     if (error) {
         console.log(error);
     }

@@ -271,7 +271,7 @@ function handleAttachments(recipient, entry, context) {
 function handleFreeMsgFlow(recipient, sessionId, entry, context) {
     let message = entry.msg;
     let entities = entry.wit_entities;
-
+    context.is_changed = false;
     Wit.extractEntities(entities, context).then(context =>
         handleMsgFlow(sessionId, context)
     )
@@ -316,24 +316,33 @@ function mainFlow(source,recipient,entry) {
 }
 
 
-function easterEggs(message) {
+function handleSmallTalk(context) {
     return new Promise(
         function (resolve, reject) {
+            if(context && context.small_talk && context.small_talk.length > 0) {
+                let response = "";
+                // for (let i = 0; i < context.small_talk.length; i++) {
 
-            if (message == "אוינק") {
-                return resolve(emoji.emojify(':pig_nose: :pig_nose: :pig_nose:'))
-            } else {
-                DB.findEasterEgg(message).then(function (response) {
-                    if (response) {
+                    if (context.small_talk[0] === "אוינק") {
+                        response += emoji.emojify(':pig_nose: :pig_nose: :pig_nose:');
+                        response += "\n";
                         return resolve(response);
                     } else {
-                        return resolve(undefined);
+                        DB.findEasterEgg(context.small_talk[0]).then(function (resp) {
+                            if (resp) {
+                                response += resp;
+                                response += "\n";
+                                return resolve(response);
+                            }
+                        }).catch(function (err) {
+                            return reject(err);
+                        });
                     }
-                }).catch(function (err) {
-                    return reject(err);
-                });
+                // }
+            } else {
+                return resolve(undefined)
             }
-        });
+        })
 }
 
 
@@ -1054,6 +1063,7 @@ function resetSession(context, recipient) {
     delete context.is_for_groups;
     delete context.availability;
     delete context.is_duda;
+    delete context.is_changed;
 
 
     Formatter.createGeneralMenu(context).then(menu => {
@@ -1118,6 +1128,55 @@ function handleRoomInfo(recipient,context) {
         }
 
 
+function findRoomsByContext(context, recipient, reject, sessionId,is_small_talk) {
+    findEscapeRoomByContext(context).then(context => {
+        if (context && context.is_changed) {
+            if (context.room_list && context.room_list.length > 0) {
+                if (context.room_list && context.room_list.length > 0) {
+                    displayResponse(recipient, context)
+                } else {
+                    return reject();
+                }
+            } else {
+                if (context.location && context.location.length > 0) {
+                    convertLocationToGeo(context.location[0]).then(coords => {
+                        if (coords && coords.lat && coords.lng) {
+                            // delete context.location;
+                            context.lat = coords.lat;
+                            context.lon = coords.lng;
+                            sessions[sessionId].context = context;
+                        }
+                        findEscapeRoomByContext(context).then(context => {
+                            if (context && context.room_list && context.room_list.length > 0) {
+                                if (context.room_list && context.room_list.length > 0) {
+                                    displayResponse(recipient, context)
+                                } else {
+                                    return reject();
+                                }
+                            }
+                        })
+                    })
+                }
+            }
+        } else if(!is_small_talk) {
+            FB.newSimpleMessage(recipient, "לא הבנתי את כוונתך בוטן יקר...")
+        }
+    }).catch((err) => {
+        if (err) {
+            console.error('Oops! Got an error from Wit: ', err.stack || err);
+        }
+        setTimeout(function () {
+            FB.newSenderAction(sender, Config.TYPING_OFF).then(_ => {
+                let new_context = sessions[sessionId].context;
+                displayErrorMessage(sender, new_context).then(ans => {
+                    // createGeneralMenu(new_context).then(menu => {
+                    //     FB.newStructuredMessage(sender, menu);
+                    // })
+                })
+            }, 3000);
+        })
+    })
+}
 
 function handleMsgFlow(sessionId, context) {
     return new Promise(
@@ -1132,55 +1191,20 @@ function handleMsgFlow(sessionId, context) {
                     FB.newSimpleMessage(recipient, "ספר לי על איזה חדר אתה רוצה לקבל מידע על " + context.room_info.toString())
                 }
             } else {
-                findEscapeRoomByContext(context).then(context => {
-                    // if (context && ((context.is_changed && context.is_changed === true) || (!context.hasOwnProperty('is_changed') ) )) {
-                        if (context.room_list && context.room_list.length > 0) {
-                            if (context.room_list && context.room_list.length > 0) {
-                                displayResponse(recipient, context)
-                            } else {
-                                return reject();
-                            }
-                        } else {
-                            if (context.location && context.location.length > 0) {
-                                convertLocationToGeo(context.location[0]).then(coords => {
-                                    if (coords && coords.lat && coords.lng) {
-                                        // delete context.location;
-                                        context.lat = coords.lat;
-                                        context.lon = coords.lng;
-                                        sessions[sessionId].context = context;
-                                    }
-                                    findEscapeRoomByContext(context).then(context => {
-                                        if (context && context.room_list && context.room_list.length > 0) {
-                                            if (context.room_list && context.room_list.length > 0) {
-                                                displayResponse(recipient, context)
-                                            } else {
-                                                return reject();
-                                            }
-                                        }
-                                    })
-                                })
-                            }
-                        }
-                    // } else {
-                    //     FB.newSimpleMessage(recipient,"לא הבנתי את כוונתך בוטן יקר...")
-                    // }
-                }).catch((err) => {
-                    if (err) {
-                        console.error('Oops! Got an error from Wit: ', err.stack || err);
+                handleSmallTalk(context).then(resp => {
+                    if(resp) {
+                        FB.newSimpleMessage(recipient, resp).then( rrr => {
+                            delete context.small_talk;
+                            findRoomsByContext(context, recipient, reject, sessionId, true);
+                        })
+                    } else {
+                        findRoomsByContext(context, recipient, reject, sessionId,false);
                     }
-                    setTimeout(function () {
-                        FB.newSenderAction(sender, Config.TYPING_OFF).then(_ => {
-                            let new_context = sessions[sessionId].context;
-                            displayErrorMessage(sender, new_context).then(ans => {
-                                // createGeneralMenu(new_context).then(menu => {
-                                //     FB.newStructuredMessage(sender, menu);
-                                // })
-                            })
-                        }, 3000);
-                    })
                 })
             }
         })
+
+
 }
 
 function handleMessage(sessionId,question,context) {
@@ -1237,7 +1261,6 @@ module.exports = {
     sessions: sessions,
     updateSession: updateSession,
     findOrCreateSession: findOrCreateSession,
-    easterEggs: easterEggs,
     findRoomByName: findRoomByName,
     findRoomsByCompany: findRoomsByCompany,
     findEscapeRoomByContext: findEscapeRoomByContext,

@@ -28,6 +28,7 @@ function extractEntities(entities, context) {
             let availability = getValues(entities, 'room_availability');
             let datetime = getDatetime(entities);
             let room_info = getValues(entities, 'room_info');
+            let small_talk = getValues(entities, 'small_talk');
             let price = getValues(entities, 'amount_of_money');
 
             console.log("wit received: " + location);
@@ -37,28 +38,33 @@ function extractEntities(entities, context) {
                 delete context.lat;
                 delete context.lon;
                 context.location = location;
-
+                context.is_changed = true
             }
             if (num_of_people.length > 0) {
                 context.num_of_people = num_of_people;
+                context.is_changed = true
             }
 
             if (datetime && datetime.length > 0) {
                 context.availability = "פנוי";
-                context.datetime = datetime[0]
+                context.datetime = datetime[0];
+                context.is_changed = true
             }
 
             if (availability && availability.length > 0) {
-                context.availability = availability
+                context.availability = availability;
+                context.is_changed = true
             }
 
 
             if (room_name.length > 0) {
-                context.room_name = room_name
+                context.room_name = room_name;
+                context.is_changed = true;
             }
 
             if (company.length > 0) {
-                context.company_name = company
+                context.company_name = company;
+                context.is_changed = true
             }
 
             if (categories.length > 0) {
@@ -66,10 +72,15 @@ function extractEntities(entities, context) {
             }
 
             if (room_info.length > 0) {
-                context.room_info = room_info
+                context.room_info = room_info;
+                context.is_changed = true
             }
-            // let murmur_after = murmur.hash128(context.toString).hash_raw;
-            // if(murmur_before === murmur_after) context.is_changed = false; else context.is_changed = true;
+
+            if (small_talk.length > 0) {
+                context.small_talk = small_talk;
+                // small talk does not change context
+            }
+
             return resolve(context);
         })
 }
@@ -140,74 +151,91 @@ function enrichFlags(context, categories) {
         if (categories[i].trim() === "הריון") {
             console.log("הריון");
             context.is_for_pregnant = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "נגיש לנגים") {
             console.log("נכים");
             context.is_for_disabled = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "מותאם לכבדי שמיעה") {
             console.log("שמיעה");
             context.is_for_hearing_impaired = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "לילדים") {
             console.log("ילדים");
             context.is_for_children = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "מבוגרים") {
             console.log("מבוגרים");
             context.is_for_children = false;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "אשראי") {
             console.log("אשראי");
             context.is_credit_card_accepted = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "לא מפחיד") {
             console.log("לא מפחיד");
             context.is_scary = false;
+            context.is_changed = true
 
         } else if (categories[i].trim() === "מפחיד") {
             console.log("מפחיד");
             context.is_scary = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "מתחילים") {
             console.log("מתחילים");
             context.is_beginner = true;
+            context.is_changed = true
         }
+
         if (categories[i].trim() === "מנוסים") {
             console.log("מנוסים");
             context.is_beginner = false;
+            context.is_changed = true
+
         }
 
         if (categories[i].trim() === "ליניארי") {
             console.log("ליניארי");
             context.is_linear = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "מקבילי") {
             console.log("מקבילי");
             context.is_parallel = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "קבוצה גדולה") {
             console.log("קבוצות גדולות");
             context.is_for_groups = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "כפול") {
             console.log("כפול");
             context.is_double = true;
+            context.is_changed = true
         }
 
         if (categories[i].trim() === "שחקן") {
             console.log("שחקן");
             context.is_actor = true;
+            context.is_changed = true
         }
     }
     return context
