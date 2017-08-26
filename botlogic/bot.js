@@ -118,7 +118,7 @@ function handlePostback(recipient, entry, context) {
         setTimeout(function () {
             let elements = [];
 
-            let videoItem = createVideoItem();
+            let videoItem = Formatter.createVideoItem();
             elements.push(videoItem);
 
             FB.newStructuredMessage(recipient, elements).then(r => {
