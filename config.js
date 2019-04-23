@@ -1,6 +1,6 @@
 'use strict';
 
-const NEW_WIT_TOKEN = '2BWX44CBYKUGO2EUZLEXK5WZQQVMN3HJ';
+const NEW_WIT_TOKEN = 'WIT_TOKEN';
 
 const WIT_TOKEN = process.env.WIT_TOKEN || NEW_WIT_TOKEN;
 if (!WIT_TOKEN) {
@@ -8,23 +8,22 @@ if (!WIT_TOKEN) {
 }
 
 
-let FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'EAAWWKHfJWxwBAIN85prH443HmoiysM4rDypOZBAi2RKqzcJuiyTuFUkKHedXq8ANzw96KhlBZCxAdX3wyZCAnLxMQ8MettYqeJKzhx61HpknEssdp9nIPncNVVlOceJ8CjoMdivzpVHFtsw1ZBytjTtQxyOKTgOAnYSiR7kQdwZDZD';
-// let FB_PAGE_TOKEN = process.env.DEV_FB_PAGE_TOKEN || 'EAAXAgUvFkuIBAN9FVo8tYZBewf4UErvwEPmX57U98bTdAuFhi1UmQHmpr7jiWlSsVajNZBdsvUJQkZBSKZA6InqlLj5XrWaTTekSREtbq67LbZCFfPV1r9ExUvjAKQ8TZCrdNa9RZAFr9qeLgaE2NMqCWi3ZCoPcZAxyZBJeRA63mxsgZDZD';
+let FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'FB_PAGE_TOKEN';
 if (!FB_PAGE_TOKEN) {
 	throw new Error('Missing FB_PAGE_TOKEN. Go to https://developers.facebook.com/docs/pages/access-tokens to get one.')
 }
 
 let FB_VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN || 'my_voice_is_my_password_verify_me';
 
-let DASHBOT_TOKEN = process.env.DASHBOT_TOKEN || 'kp9lXvq86mFjtFIln6QqUWFZNzAhaC399ctQXnAV';
+let DASHBOT_TOKEN = process.env.DASHBOT_TOKEN || 'DASHBOT_TOKEN';
 
-let MONGODB_URL = process.env.PROD_MONGODB || 'mongodb://escape-bot:escape-bot@ds131109.mlab.com:31109/escape-bot';
+let MONGODB_URL = process.env.PROD_MONGODB || 'DB_PATH';
 
 //mongodb://escape-bot:escape-bot@ds131109.mlab.com:31109/escape-bot
 
 let ESCAPE_ROOMS_COLLECTION = "escape_rooms_new";
 
-let ESCAPER_KEY  = "e31e83d42f664fcda915f513bd4a92b8";
+let ESCAPER_KEY  = "ESCAPER_KEY";
 let NUM_OF_ROOMS_TO_RETURN = 10;
 
 let GET_STARTED_PAYLOAD = "USER_STARTED_CONVERSATION";
